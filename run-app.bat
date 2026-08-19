@@ -2,16 +2,9 @@
 setlocal
 cd /d "%~dp0"
 title Obour Youth Club Management
-set "DATA_DIR=%LOCALAPPDATA%\ObourYouthClub\data"
-set "BACKUP_DIR=%LOCALAPPDATA%\ObourYouthClub\backups"
-if not exist "%DATA_DIR%" mkdir "%DATA_DIR%"
-if not exist "%BACKUP_DIR%" mkdir "%BACKUP_DIR%"
 echo ==========================================
 echo   Obour Youth Club Management System
 echo ==========================================
-echo.
-echo Runtime data folder:
-echo %DATA_DIR%
 echo.
 where node >nul 2>nul
 if errorlevel 1 (

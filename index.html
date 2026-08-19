@@ -15,13 +15,7 @@
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="alternate icon" href="icon.svg">
     <link rel="shortcut icon" href="icon.svg">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="48x48" href="icons/icon-48.png">
-    <meta name="application-name" content="مركز شباب العبور">
-    <meta name="apple-mobile-web-app-title" content="مركز شباب العبور">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="icon.svg">
     <!-- SheetJS for Excel Reading -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
@@ -1339,85 +1333,9 @@ async function setUserApproval(id,approved){await apiFetch('/api/admin/users/'+i
         function showFederationsPage(){if(!state.isAdminLoggedIn){alert('صفحة الاتحادات متاحة للأدمن فقط.');return;}document.getElementById('appContent')?.classList.add('hidden');document.getElementById('federationsPage')?.classList.remove('hidden');document.getElementById('federationDetailPage')?.classList.add('hidden');loadFederations().then(renderFederationsPage);}
         function openFederationDetail(id){const f=(state.federations||[]).find(x=>String(x.id)===String(id));if(!f)return;document.getElementById('appContent')?.classList.add('hidden');document.getElementById('federationsPage')?.classList.add('hidden');const page=document.getElementById('federationDetailPage');page.classList.remove('hidden');document.getElementById('federationDetailTitle').textContent=f.name;document.getElementById('federationDetailMeta').textContent=`اللعبة: ${f.sport||'غير محددة'}`;renderFederationDetail(f);}
         async function addFederationFromPage(){const name=document.getElementById('pageFederationName').value.trim(),sport=document.getElementById('pageFederationSport').value.trim();if(!name)return alert('اكتب اسم الاتحاد');const r=await apiFetch('/api/federations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,sport})});if(!r.ok)return alert('تعذر إضافة الاتحاد');document.getElementById('pageFederationName').value='';document.getElementById('pageFederationSport').value='';await loadFederations();renderFederationsPage();}
-        async function addManualPlayerToFederation(id){const f=(state.federations||[]).find(x=>String(x.id)===String(id));if(!f)return;const sport=(state.sports||[]).find(s=>String(s.name||'')===String(f.sport||''));if(!sport)return alert('لعبة الاتحاد غير موجودة محلياً. أضف اللعبة أولاً.');const name=prompt('اسم اللاعب:');if(!name)return;const reg=prompt('رقم القيد:','N/A')||'N/A';const member=prompt('رقم العضوية:','')||'';const r=await apiFetch(`/api/sports/${sport.id}/players`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,registrationNo:reg,membershipNumber:member,federation:f.name,federationId:f.id})});const d=await r.json().catch(()=>({}));if(!r.ok)return alert(d.message||'تعذر إضافة اللاعب');await apiFetch(`/api/federations/${f.id}/players`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerIds:[d.id]})});await loadSports();await loadFederations();renderFederationDetail(state.federations.find(x=>String(x.id)===String(f.id))||f);}
+        async function addManualPlayerToFederation(id){const f=(state.federations||[]).find(x=>String(x.id)===String(id));if(!f)return;const sport=(state.sports||[]).find(s=>String(s.name||'')===String(f.sport||''));if(!sport)return alert('لعبة الاتحاد غير موجودة محلياً. أضف اللعبة أولاً.');const name=prompt('اسم اللاعب:');if(!name)return;const reg=prompt('رقم القيد:','N/A')||'N/A';const member=prompt('رقم العضوية:','')||'';const r=await apiFetch(`/api/sports/${sport.id}/players`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,registrationNo:reg,membershipNumber:member,federation:f.name,federationId:f.id})});if(!r.ok){const d=await r.json().catch(()=>({}));return alert(d.message||'تعذر إضافة اللاعب');}await apiFetch(`/api/federations/${f.id}/players`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerIds:[(await r.json()).id]})});await loadSports();await loadFederations();renderFederationDetail(f);}
         async function syncFederationRemote(id){const f=(state.federations||[]).find(x=>String(x.id)===String(id));if(!f)return;const url=prompt('رابط موقع الاتحاد:',f.remoteUrl||'');if(!url)return;const username=prompt('اسم حساب الاتحاد:',f.remoteUsername||'');if(!username)return;const password=prompt('كلمة مرور حساب الاتحاد (لن يتم عرضها لاحقاً):','');if(!password)return;const r=await apiFetch(`/api/federations/${f.id}/remote-sync`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,username,password})});const d=await r.json().catch(()=>({}));if(!r.ok)return alert(d.message||'فشل المزامنة');await loadSports();await loadFederations();const fresh=state.federations.find(x=>String(x.id)===String(id));renderFederationDetail(fresh);alert(`تمت المزامنة: ${d.stats.added} لاعب جديد، ${d.stats.updated} لاعب محدث.`);}
         function renderFederationDetail(f){const el=document.getElementById('federationDetailContent');if(!el)return;const players=allPlayersForExport().filter(p=>p.federationId===f.id||p.federation===f.name);el.innerHTML=`<div class="flex flex-wrap gap-2 mb-5">${state.isAdminLoggedIn?`<button onclick="addManualPlayerToFederation('${String(f.id).replace(/'/g,"\\'")}')" class="bg-emerald-600 px-4 py-2.5 rounded-xl font-bold">+ إضافة لاعب يدوي</button><button onclick="syncFederationRemote('${String(f.id).replace(/'/g,"\\'")}')" class="bg-cyan-600 px-4 py-2.5 rounded-xl font-bold">مزامنة من موقع الاتحاد</button>`:''}</div><div class="grid gap-3">${players.length?players.map(p=>`<div class="glass-card rounded-2xl p-4 flex items-center gap-4"><img src="${escapeHtml(p.photo||'icon.svg')}" onerror="this.src='icon.svg'" class="w-14 h-14 rounded-xl object-cover"><div class="flex-1"><b class="text-white">${escapeHtml(p.name||'-')}</b><div class="text-xs text-slate-400 mt-1">رقم القيد: ${escapeHtml(p.registrationNo||'-')} • العضوية: ${escapeHtml(p.membershipNumber||'-')} • اللعبة: ${escapeHtml(p.sport||f.sport||'-')}</div></div>${p.fileUrl?`<a href="${escapeHtml(p.fileUrl)}" target="_blank" class="px-3 py-2 rounded-xl bg-purple-600/20 text-purple-300 text-xs font-bold">الملف</a>`:''}</div>`).join(''):'<p class="text-slate-500 py-10 text-center">لا يوجد لاعبون في الاتحاد حتى الآن.</p>'}</div>`;}
-
-        async function loadFederations(){
-            if(!state.isAdminLoggedIn){state.federations=[];return []}
-            try{
-                const r=await apiFetch('/api/federations');
-                const data=await r.json().catch(()=>[]);
-                if(!r.ok) throw new Error(data.message||'تعذر تحميل الاتحادات');
-                state.federations=Array.isArray(data)?data:[];
-                renderFederationList();
-                return state.federations;
-            }catch(e){
-                console.error('loadFederations',e); state.federations=[]; return [];
-            }
-        }
-        function renderFederationList(){
-            const el=document.getElementById('federationList'); if(!el)return;
-            el.innerHTML=(state.federations||[]).map(f=>`<div class="bg-slate-800/70 rounded-2xl p-4 mb-2 flex flex-wrap items-center gap-2"><div class="flex-1"><b>${escapeHtml(f.name)}</b><span class="text-xs text-slate-400 mr-2">${escapeHtml(f.sport||'')}</span></div><button onclick="openFederationDetail('${String(f.id).replace(/'/g,"\\'")}')" class="px-3 py-2 rounded-lg bg-purple-600/20 text-purple-300 text-xs font-bold">فتح</button><button onclick="deleteFederation('${String(f.id).replace(/'/g,"\\'")}')" class="px-3 py-2 rounded-lg bg-rose-600/20 text-rose-300 text-xs font-bold">حذف</button></div>`).join('')||'<p class="text-slate-500 text-center py-5">لا توجد اتحادات.</p>';
-        }
-        async function addFederation(){
-            if(!state.isAdminLoggedIn)return;
-            const name=document.getElementById('federationName')?.value.trim(), sport=document.getElementById('federationSport')?.value.trim();
-            if(!name)return alert('اكتب اسم الاتحاد');
-            if(!sport)return alert('اكتب اللعبة');
-            try{
-                const r=await apiFetch('/api/federations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,sport})});
-                const d=await r.json().catch(()=>({})); if(!r.ok)throw Error(d.message||'تعذر إضافة الاتحاد');
-                document.getElementById('federationName').value=''; document.getElementById('federationSport').value='';
-                await loadFederations(); renderFederationList(); showAppToast('تمت إضافة الاتحاد بنجاح');
-            }catch(e){alert(e.message||'تعذر إضافة الاتحاد')}
-        }
-        async function deleteFederation(id){
-            if(!state.isAdminLoggedIn)return;
-            if(!confirm('هل تريد حذف هذا الاتحاد؟ سيتم إزالة ربطه من اللاعبين.'))return;
-            try{
-                const r=await apiFetch('/api/federations/'+encodeURIComponent(id),{method:'DELETE'}); if(!r.ok)throw Error('تعذر حذف الاتحاد');
-                await loadSports(); await loadFederations(); renderFederationList(); renderFederationsPage(); showAppToast('تم حذف الاتحاد');
-            }catch(e){alert(e.message||'تعذر حذف الاتحاد')}
-        }
-        function renderFederationPlayerPicker(){
-            const el=document.getElementById('federationPlayerPicker'); if(!el)return;
-            const q=(document.getElementById('federationPlayerSearch')?.value||'').trim().toLowerCase();
-            const f=(state.federations||[]).find(x=>String(x.id)===String(window.__federationAssignId)); if(!f)return;
-            const players=allPlayersForExport().filter(p=>(!f.sport||p.sport===f.sport) && (!q||String(p.name||'').toLowerCase().includes(q)||String(p.registrationNo||'').toLowerCase().includes(q)));
-            const selected=new Set(window.__federationAssignedIds||[]);
-            el.innerHTML=players.map(p=>`<label class="flex items-center gap-3 bg-slate-900/70 border border-slate-800 rounded-xl p-3 cursor-pointer"><input type="checkbox" class="federation-player-check" value="${p.id}" ${selected.has(String(p.id))?'checked':''}><img src="${escapeHtml(p.photo||'icon.svg')}" class="w-9 h-9 rounded-lg object-cover"><span class="flex-1"><b>${escapeHtml(p.name)}</b><small class="block text-xs text-slate-500">${escapeHtml(p.registrationNo||'-')} • ${escapeHtml(p.sport||'-')}</small></span></label>`).join('')||'<p class="text-slate-500 text-center py-6">لا يوجد لاعبون مطابقون.</p>';
-        }
-        async function openFederationPlayerLinks(id){
-            if(!state.isAdminLoggedIn)return;
-            const f=(state.federations||[]).find(x=>String(x.id)===String(id)); if(!f)return;
-            window.__federationAssignId=String(id);
-            window.__federationAssignedIds=allPlayersForExport().filter(p=>String(p.federationId)===String(id)||p.federation===f.name).map(p=>String(p.id));
-            document.getElementById('federationAssignTitle').textContent=`${f.name} — ${f.sport||'كل الألعاب'}`;
-            document.getElementById('federationPlayerSearch').value='';
-            renderFederationPlayerPicker(); const m=document.getElementById('federationPlayersModal');m.classList.remove('hidden');m.classList.add('flex');
-        }
-        async function saveFederationPlayerLinks(){
-            if(!state.isAdminLoggedIn)return;
-            const id=window.__federationAssignId; if(!id)return;
-            const ids=[...document.querySelectorAll('.federation-player-check:checked')].map(x=>Number(x.value));
-            try{
-                const r=await apiFetch('/api/federations/'+encodeURIComponent(id)+'/players',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerIds:ids})});
-                const d=await r.json().catch(()=>({})); if(!r.ok)throw Error(d.message||'تعذر حفظ الربط');
-                await loadSports(); await loadFederations(); renderFederationList(); renderFederationsPage(); closeModal('federationPlayersModal'); showAppToast(`تم ربط ${d.updated||0} لاعب بالاتحاد`);
-            }catch(e){alert(e.message||'تعذر حفظ الربط')}
-        }
-        async function openActivityModal(){
-            if(!state.isAdminLoggedIn)return;
-            const el=document.getElementById('activityList'); if(!el)return;
-            el.innerHTML='<p class="text-slate-500 text-center py-8">جاري تحميل السجل...</p>';
-            const m=document.getElementById('activityModal');m.classList.remove('hidden');m.classList.add('flex');
-            try{
-                const r=await apiFetch('/api/admin/activity'); const rows=await r.json(); if(!r.ok)throw Error(rows.message||'تعذر تحميل السجل');
-                state.activityLog=Array.isArray(rows)?rows:[];
-                el.innerHTML=state.activityLog.slice().reverse().map(a=>`<div class="border-b border-slate-800 py-3"><div class="font-bold text-white">${escapeHtml(a.action||'نشاط')}</div><div class="text-xs text-slate-400 mt-1">${escapeHtml(a.name||a.username||'-')} • ${escapeHtml(a.sport||'')} • ${escapeHtml(a.details||'')} • ${escapeHtml(a.timestamp||'')}</div></div>`).join('')||'<p class="text-slate-500 text-center py-8">لا يوجد نشاط مسجل.</p>';
-            }catch(e){el.innerHTML=`<p class="text-rose-400 text-center py-8">${escapeHtml(e.message||'تعذر تحميل السجل')}</p>`}
-        }
 
         function renderFederationsPage(){const el=document.getElementById('federationsPageList');if(!el)return;const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));el.innerHTML=(state.federations||[]).map(f=>{const players=allPlayersForExport().filter(p=>p.federation===f.name||p.federationId===f.id);return `<div onclick="openFederationDetail('${String(f.id).replace(/'/g,"\'")}')" class="glass-card float-in rounded-3xl p-5 border border-purple-500/10 col-span-full cursor-pointer hover:border-purple-400/40 transition"><div class="flex items-center gap-3 mb-4"><div class="sport-logo"><i class="fa-solid fa-people-group"></i></div><div><h3 class="font-black text-xl text-white">${esc(f.name)}</h3><p class="text-slate-400 text-sm">اللعبة: ${esc(f.sport||'غير محددة')} • ${players.length} لاعب</p></div></div><div class="space-y-2">${players.length?players.map(p=>`<div class="flex items-center gap-3 bg-slate-900/60 rounded-2xl p-3"><img src="${esc(p.photo||'icon.svg')}" class="w-12 h-12 rounded-xl object-cover border border-slate-700" onerror="this.src='icon.svg'"><div class="min-w-0 flex-1"><b class="text-white">${esc(p.name)}</b><div class="text-xs text-slate-400">رقم القيد: ${esc(p.registrationNo)} • المدرب: ${esc(p.coach)}</div></div>${p.fileUrl?`<a href="${esc(p.fileUrl)}" target="_blank" class="px-3 py-2 rounded-xl bg-purple-600/20 text-purple-300 text-xs font-bold"><i class="fa-solid fa-file"></i> ملف</a>`:'<span class="text-xs text-slate-600">لا يوجد ملف</span>'}</div>`).join(''):'<p class="text-slate-500">لا يوجد لاعبون مقيدون بهذا الاتحاد.</p>'}</div></div>`}).join('')||'<div class="col-span-full text-center text-slate-500 py-10">لا توجد اتحادات.</div>'; }
 
@@ -1535,46 +1453,7 @@ async function setUserApproval(id,approved){await apiFetch('/api/admin/users/'+i
 })();
 </script>
 </html><script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load', async ()=>{
-    try{
-      const reg=await navigator.serviceWorker.register('/sw.js',{scope:'/'});
-      if(reg.waiting) window.dispatchEvent(new Event('pwa-update-available'));
-      reg.addEventListener('updatefound',()=>{
-        const worker=reg.installing;
-        if(!worker)return;
-        worker.addEventListener('statechange',()=>{
-          if(worker.state==='installed' && navigator.serviceWorker.controller){
-            window.dispatchEvent(new Event('pwa-update-available'));
-          }
-        });
-      });
-      navigator.serviceWorker.addEventListener('controllerchange',()=>{
-        if(window.__pwaReloading)return;
-        window.__pwaReloading=true;
-        window.location.reload();
-      });
-    }catch(err){console.warn('PWA registration failed:',err);}
-  });
-}
-
-(function(){
-  function toastPwa(message, actionText, action){
-    const old=document.getElementById('pwaStatusToast'); if(old) old.remove();
-    const el=document.createElement('div'); el.id='pwaStatusToast';
-    el.style.cssText='position:fixed;left:14px;right:14px;bottom:18px;z-index:100000;display:flex;align-items:center;gap:12px;padding:13px 15px;border:1px solid rgba(148,163,184,.18);border-radius:18px;background:rgba(7,11,20,.96);backdrop-filter:blur(18px);box-shadow:0 18px 55px rgba(0,0,0,.4);color:#e5e7eb;font-family:Cairo,Arial,sans-serif';
-    el.innerHTML='<span style="flex:1;font-size:13px;line-height:1.7">'+message+'</span>'+(actionText?'<button id="pwaToastAction" style="border:0;border-radius:11px;padding:9px 13px;background:#10b981;color:#032016;font-weight:800;cursor:pointer">'+actionText+'</button>':'');
-    document.body.appendChild(el); if(action) document.getElementById('pwaToastAction').onclick=()=>{action();el.remove();};
-    if(!action) setTimeout(()=>el.remove(),5000);
-  }
-  window.addEventListener('pwa-update-available',()=>{
-    if(navigator.serviceWorker?.controller){
-      toastPwa('يتوفر إصدار جديد من التطبيق. حدّث الآن للحصول على آخر التحسينات.','تحديث',()=>navigator.serviceWorker.getRegistration().then(r=>r?.waiting?.postMessage({type:'SKIP_WAITING'})));
-    }
-  });
-  window.addEventListener('online',()=>toastPwa('تم استعادة الاتصال بالإنترنت.','',null));
-  window.addEventListener('offline',()=>toastPwa('أنت الآن بدون اتصال. الواجهة الأساسية ستظل متاحة، لكن البيانات تحتاج اتصالاً بالخادم.','',null));
-})();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}
 
 window.addEventListener('unhandledrejection',e=>{console.error(e.reason);showAppToast(e.reason?.message||'حدث خطأ غير متوقع. حاول مرة أخرى.','error');});
 window.addEventListener('error',e=>{if(e?.message)console.error('UI error:',e.message);});
