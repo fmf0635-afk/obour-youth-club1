@@ -1,0 +1,7 @@
+# Runtime data must NEVER be committed to GitHub
+node_modules/
+.env
+backups/
+data/
+*.broken-*.json
+*.tmp

@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obour Youth Club • Sports Management</title>
+    <meta name="theme-color" content="#07111f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <!-- Tailwind CSS & FontAwesome CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="alternate icon" href="icon.svg">
+    <link rel="shortcut icon" href="icon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="icons/icon-48.png">
+    <meta name="application-name" content="مركز شباب العبور">
+    <meta name="apple-mobile-web-app-title" content="مركز شباب العبور">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <!-- SheetJS for Excel Reading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+        body { font-family: 'Cairo', sans-serif; }
+        @page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
+        @media print {
+            @page { size: A4 portrait; margin: 10mm; }
+            html, body { width: auto; height: auto; margin: 0; padding: 0; background: #fff !important; }
+            body > * { visibility: hidden !important; }
+            body.print-coach #coachModal,
+            body.print-coach #coachModal *,
+            body.print-player #playerModal,
+            body.print-player #playerModal *,
+            body.print-form #printableModal,
+            body.print-form #printableModal * { visibility: visible !important; }
+            body.print-coach #coachModal,
+            body.print-player #playerModal,
+            body.print-form #printableModal {
+                display: block !important; position: static !important; width: 100% !important; max-width: none !important;
+                height: auto !important; max-height: none !important; margin: 0 !important; padding: 0 !important;
+                overflow: visible !important; background: #fff !important; color: #000 !important; border: 0 !important;
+            }
+            .no-print { display: none !important; }
+            .coach-print-table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: #fff !important; color: #000 !important; }
+            .coach-print-table th, .coach-print-table td { border: 1px solid #222; padding: 7px; text-align: right; font-size: 9.5pt; color: #000 !important; background: #fff !important; }
+            .coach-print-table th { font-weight: 700; background: #f1f5f9 !important; }
+            .coach-report-header, .coach-report-header * { color: #000 !important; }
+            .coach-report-header { margin-bottom: 1rem; padding-bottom: .75rem; border-bottom: 1px solid #222; }
+        }
+
+        /* Mobile app install prompt */
+        #mobileInstallPrompt{position:fixed;left:12px;right:12px;bottom:16px;z-index:99999;display:none;align-items:center;gap:12px;padding:14px 16px;border:1px solid rgba(255,255,255,.14);border-radius:20px;background:rgba(7,17,31,.94);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.45);cursor:pointer;animation:installPromptIn .45s cubic-bezier(.2,.8,.2,1) both}
+        #mobileInstallPrompt.show{display:flex}
+        #mobileInstallPrompt .install-icon{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(135deg,#10b981,#6366f1);color:#fff;font-size:20px}
+        #mobileInstallPrompt .install-copy{min-width:0;flex:1}
+        #mobileInstallPrompt .install-copy strong{display:block;color:#fff;font-size:14px;margin-bottom:2px}
+        #mobileInstallPrompt .install-copy span{display:block;color:#cbd5e1;font-size:12px;line-height:1.6}
+        #mobileInstallPrompt .install-close{border:0;background:transparent;color:#94a3b8;font-size:18px;padding:6px;cursor:pointer}
+        @keyframes installPromptIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+        @media(min-width:769px){#mobileInstallPrompt{display:none!important}}
+
+        /* Modern animated visual layer */
+        body{overflow-x:hidden;background:radial-gradient(circle at 15% 15%,rgba(16,185,129,.12),transparent 28%),radial-gradient(circle at 85% 25%,rgba(59,130,246,.12),transparent 30%),radial-gradient(circle at 50% 90%,rgba(168,85,247,.10),transparent 32%),#020617}
+        body:before,body:after{content:"";position:fixed;width:28rem;height:28rem;border-radius:50%;filter:blur(80px);opacity:.16;pointer-events:none;z-index:-1;animation:orbFloat 12s ease-in-out infinite alternate}
+        body:before{background:#10b981;top:-10rem;right:-8rem} body:after{background:#6366f1;bottom:-12rem;left:-10rem;animation-delay:-5s}
+        .glass-card{background:rgba(15,23,42,.68);backdrop-filter:blur(18px);border:1px solid rgba(148,163,184,.16);box-shadow:0 18px 60px rgba(0,0,0,.28)}
+        .float-in{animation:floatIn .65s cubic-bezier(.2,.8,.2,1) both}.pulse-soft{animation:pulseSoft 2.4s ease-in-out infinite}
+        .neon-ring{box-shadow:0 0 0 1px rgba(16,185,129,.2),0 0 35px rgba(16,185,129,.12)}
+        .animated-grid{background-image:linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);background-size:32px 32px}
+        @keyframes orbFloat{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(30px,-22px,0) scale(1.08)}}
+        @keyframes floatIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+        @keyframes pulseSoft{0%,100%{transform:scale(1);opacity:.92}50%{transform:scale(1.04);opacity:1}}
+        @keyframes shimmer{from{background-position:-300px 0}to{background-position:300px 0}}
+        .shimmer-title{background:linear-gradient(90deg,#fff,#6ee7b7,#93c5fd,#fff);background-size:300px 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 4s linear infinite}
+        button{transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease} button:hover{transform:translateY(-2px)}
+
+    
+        *{box-sizing:border-box} html,body{width:100%;min-width:0;margin:0;padding:0} body{overflow-x:hidden;-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility} img,video,canvas,svg{max-width:100%;height:auto} button,input,select,textarea{max-width:100%;font:inherit} .glass-card{background:rgba(15,23,42,.62);backdrop-filter:blur(18px);border:1px solid rgba(148,163,184,.12);box-shadow:0 20px 60px rgba(0,0,0,.22)}
+        .float-in{animation:floatIn .65s cubic-bezier(.2,.8,.2,1) both}.pulse-soft{animation:pulseSoft 2.2s ease-in-out infinite}.shimmer-title{background:linear-gradient(90deg,#fff,#34d399,#a78bfa,#fff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 5s linear infinite}.animated-grid{background-image:linear-gradient(rgba(52,211,153,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(139,92,246,.06) 1px,transparent 1px);background-size:36px 36px;animation:gridMove 18s linear infinite}.sport-logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(16,185,129,.22),rgba(139,92,246,.24));border:1px solid rgba(255,255,255,.08);animation:logoFloat 3s ease-in-out infinite;box-shadow:0 0 25px rgba(52,211,153,.12)}
+        @keyframes floatIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}@keyframes pulseSoft{50%{transform:scale(1.06);box-shadow:0 0 35px rgba(245,158,11,.2)}}@keyframes shimmer{to{background-position:300% 0}}@keyframes gridMove{to{background-position:36px 36px}}@keyframes logoFloat{50%{transform:translateY(-4px) rotate(2deg)}}
+        @media(max-width:768px){html,body{width:100%;min-width:0;overflow-x:hidden}body{font-size:14px}.app-header{padding:10px 12px!important}.global-search{width:100%!important}.desktop-only{display:none!important}#mainContainer{padding:12px!important}.glass-card{border-radius:20px!important}.sport-logo{width:36px;height:36px}.modal-panel{max-height:92vh!important;margin:8px!important;width:calc(100% - 16px)!important}.responsive-table{font-size:11px}.responsive-table th,.responsive-table td{padding:7px!important}.mobile-stack{display:grid!important;grid-template-columns:1fr!important}}
+
+        .sports-arena{background:radial-gradient(circle at 50% 120%,rgba(16,185,129,.22),transparent 45%),linear-gradient(135deg,#020617 0%,#07111f 45%,#0b1224 100%)}
+        .sports-arena:before{content:"";position:absolute;inset:0;opacity:.18;background:repeating-linear-gradient(90deg,transparent 0 9%,rgba(255,255,255,.06) 9.1% 9.25%,transparent 9.35% 18.5%),linear-gradient(0deg,rgba(16,185,129,.12),transparent 28%)}
+        .sports-vignette{background:radial-gradient(circle,transparent 35%,rgba(0,0,0,.7) 100%)}
+        .sports-ball{position:absolute;display:grid;place-items:center;border-radius:50%;filter:drop-shadow(0 20px 30px rgba(0,0,0,.35));opacity:.15;animation:ballDrift 8s ease-in-out infinite}.sports-ball i{font-size:clamp(4rem,10vw,9rem)}.ball-one{top:12%;right:8%;color:#34d399}.ball-two{bottom:10%;left:7%;color:#fb923c;animation-delay:-2.5s}.ball-three{top:28%;left:16%;color:#22d3ee;animation-delay:-5s}@keyframes ballDrift{0%,100%{transform:translate3d(0,0,0) rotate(0deg)}50%{transform:translate3d(25px,-25px,0) rotate(12deg)}}
+        .landing-card{box-shadow:0 35px 100px rgba(0,0,0,.45)}.auth-drawer{animation:drawerIn .38s cubic-bezier(.2,.8,.2,1)}@keyframes drawerIn{from{transform:translateX(100%);opacity:.5}to{transform:translateX(0);opacity:1}}
+
+@media(max-width:480px){
+            .app-header{padding:8px!important}
+            .app-header .brand-title{font-size:1rem!important}
+            .app-header .header-actions{width:100%;justify-content:stretch}
+            .app-header .header-actions>*{flex:1;min-width:0}
+            #mainContainer{padding:8px!important}
+            .auth-drawer{width:100%!important;max-width:100%!important;padding:18px!important}
+            .modal-panel{width:calc(100vw - 12px)!important;margin:6px!important;padding:14px!important}
+            .responsive-table{min-width:620px}
+        }
+        @media(min-width:769px){#mainContainer{width:100%;max-width:100%;margin:0 auto}}
+        
+/* Modern social-app inspired UI */
+:root{--brand:#10b981;--brand2:#06b6d4;--surface:rgba(15,23,42,.78);--line:rgba(148,163,184,.16)}
+body{background:#070b14!important;background-image:radial-gradient(circle at 10% -10%,rgba(16,185,129,.13),transparent 32%),radial-gradient(circle at 100% 0%,rgba(59,130,246,.12),transparent 30%);}
+.app-header{background:rgba(7,11,20,.82)!important;border-color:var(--line)!important;box-shadow:0 10px 40px rgba(0,0,0,.18);backdrop-filter:blur(22px)!important}
+.app-header>div:first-child{min-width:220px}.app-header .brand-title{letter-spacing:-.02em}
+#sportsNav{background:rgba(7,11,20,.68)!important;border-color:var(--line)!important;backdrop-filter:blur(18px);scrollbar-width:none}
+#sportsNav::-webkit-scrollbar{display:none}
+#sportsNav button{border:1px solid transparent!important;border-radius:999px!important;transition:.2s ease;white-space:nowrap}
+#sportsNav button:hover{transform:translateY(-1px);background:rgba(255,255,255,.08)!important}
+.glass-card,.modal-panel,.bg-slate-900,.bg-slate-800{border-color:var(--line)!important}
+button{transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+button:active{transform:scale(.98)}
+input,select,textarea{transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(16,185,129,.09)!important}
+#mainContainer{padding-top:20px!important;padding-bottom:36px!important}
+#mainContainer .bg-slate-800\/50,#mainContainer .bg-slate-800\/70{box-shadow:0 12px 35px rgba(0,0,0,.13)}
+#appContent:after{content:"";position:fixed;inset:auto 0 0;height:1px;background:linear-gradient(90deg,transparent,var(--brand),var(--brand2),transparent);opacity:.35;pointer-events:none}
+.modern-empty{border:1px dashed rgba(148,163,184,.25);background:linear-gradient(145deg,rgba(15,23,42,.72),rgba(15,23,42,.4));border-radius:24px;padding:42px 20px;text-align:center}
+.toast-modern{box-shadow:0 20px 60px rgba(0,0,0,.4);backdrop-filter:blur(18px)}
+@media(max-width:768px){.app-header{padding:10px!important}.app-header .global-search{width:100%!important;order:10}.app-header .header-actions{width:100%}.app-header>div{max-width:100%}#sportsNav{padding:9px 12px!important}.landing-card{border-radius:24px!important}.responsive-table{font-size:12px}}
+
+
+@media print{
+ body.print-report>*{visibility:hidden!important}
+ body.print-report #reportsModal,body.print-report #reportsModal *{visibility:visible!important}
+ body.print-report #reportsModal{display:flex!important;position:static!important;background:#fff!important;color:#000!important;width:100%!important;height:auto!important;max-width:none!important}
+ body.print-report #reportsModal>div{max-width:none!important;border:0!important;background:#fff!important;color:#000!important;box-shadow:none!important}
+ body.print-report .no-print{display:none!important}
+ body.print-report table{color:#000!important}
+ body.print-report th,body.print-report td{border:1px solid #222!important;color:#000!important;background:#fff!important}
+}
+</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- HOME / LANDING SCREEN -->
+    <div id="lockScreen" class="fixed inset-0 z-50 overflow-hidden bg-slate-950 flex items-center justify-center">
+        <div class="absolute inset-0 sports-arena"></div>
+        <div class="absolute inset-0 sports-vignette"></div>
+        <div class="sports-ball ball-one"><i class="fa-solid fa-futbol"></i></div>
+        <div class="sports-ball ball-two"><i class="fa-solid fa-basketball"></i></div>
+        <div class="sports-ball ball-three"><i class="fa-solid fa-volleyball"></i></div>
+        <div class="absolute top-12 left-8 md:left-20 text-white/10 text-7xl md:text-9xl rotate-12"><i class="fa-solid fa-trophy"></i></div>
+        <div class="absolute bottom-10 right-8 md:right-20 text-white/10 text-7xl md:text-9xl -rotate-12"><i class="fa-solid fa-medal"></i></div>
+        <div class="relative z-10 w-full max-w-5xl px-5">
+            <div class="landing-card glass-card rounded-[2rem] p-7 md:p-12 text-center border border-white/10">
+                <button type="button" onclick="openAdminModal()" aria-label="دخول الأدمن" title="دخول الأدمن" class="mx-auto mb-5 w-24 h-24 md:w-28 md:h-28 rounded-3xl bg-emerald-400/10 border border-emerald-300/30 hover:bg-emerald-400/20 hover:border-emerald-300/60 flex items-center justify-center text-5xl md:text-6xl text-emerald-300 pulse-soft shadow-2xl transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-400/20">
+                    <i class="fa-solid fa-trophy"></i>
+                </button>
+                <p class="text-emerald-300 font-bold tracking-[.25em] text-xs md:text-sm mb-3">SPORTS MANAGEMENT CENTER</p>
+                <h1 class="text-4xl md:text-7xl font-black shimmer-title leading-tight">مركز شباب العبور</h1>
+                <p class="text-slate-300 mt-4 max-w-2xl mx-auto text-sm md:text-lg">منصة ذكية لإدارة الألعاب واللاعبين والكباتن والاتحادات الرياضية في مكان واحد.</p>
+                <div class="flex flex-wrap justify-center gap-3 mt-7 text-xs text-slate-400">
+                    <span class="px-4 py-2 rounded-full bg-white/5 border border-white/10"><i class="fa-solid fa-futbol text-emerald-300 ml-2"></i>Football</span>
+                    <span class="px-4 py-2 rounded-full bg-white/5 border border-white/10"><i class="fa-solid fa-basketball text-orange-300 ml-2"></i>Basketball</span>
+                    <span class="px-4 py-2 rounded-full bg-white/5 border border-white/10"><i class="fa-solid fa-person-swimming text-cyan-300 ml-2"></i>Swimming</span>
+                    <span class="px-4 py-2 rounded-full bg-white/5 border border-white/10"><i class="fa-solid fa-medal text-amber-300 ml-2"></i>More Sports</span>
+                </div>
+                <button onclick="openEntryChoice()" class="mt-9 w-full sm:w-auto min-w-[250px] bg-gradient-to-r from-emerald-500 via-cyan-500 to-indigo-500 hover:from-emerald-400 hover:via-cyan-400 hover:to-indigo-400 text-slate-950 font-black px-8 py-4 rounded-2xl shadow-2xl shadow-emerald-900/30 text-lg">
+                    ابدأ الآن <i class="fa-solid fa-arrow-left mr-2"></i>
+                </button>
+                <p class="text-slate-500 text-xs mt-4">اضغط للمتابعة إلى تسجيل الدخول أو إنشاء حساب جديد</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ENTRY CHOICE -->
+    <div id="entryChoiceModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-[60] p-4">
+        <div class="glass-card rounded-3xl w-full max-w-xl p-6 md:p-8 float-in border border-white/10">
+            <div class="text-center mb-7"><div class="text-emerald-300 text-3xl mb-2"><i class="fa-solid fa-person-running"></i></div><h2 class="text-2xl md:text-3xl font-black text-white">أهلاً بك</h2><p class="text-slate-400 mt-1">اختر طريقة الدخول إلى المنصة</p></div>
+            <div class="grid sm:grid-cols-2 gap-4">
+                <button onclick="openUserAuthModal('register');closeModal('entryChoiceModal')" class="group p-5 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 hover:bg-emerald-500/20 text-right"><i class="fa-solid fa-user-plus text-emerald-300 text-2xl mb-4"></i><b class="block text-white text-lg">إنشاء حساب جديد</b><span class="text-xs text-slate-400">اسم المستخدم وكلمة المرور — ثم ينتظر موافقة الأدمن وتحديد اللعبة</span></button>
+                <button onclick="openUserAuthModal('login');closeModal('entryChoiceModal')" class="group p-5 rounded-2xl bg-indigo-500/10 border border-indigo-400/20 hover:bg-indigo-500/20 text-right"><i class="fa-solid fa-right-to-bracket text-indigo-300 text-2xl mb-4"></i><b class="block text-white text-lg">Sign In</b><span class="text-xs text-slate-400">ادخل بحسابك</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Toast -->
+    <div id="welcomeToast" class="fixed top-5 left-1/2 -translate-x-1/2 translate-y-[-140%] z-[100] transition-transform duration-500 pointer-events-none">
+        <div class="glass-card px-6 py-3 rounded-2xl border border-emerald-400/30 shadow-2xl shadow-emerald-900/30"><i class="fa-solid fa-circle-check text-emerald-300 ml-2"></i><span id="welcomeToastText" class="font-bold text-white"></span></div>
+    </div>
+
+    <!-- MAIN APP CONTENT -->
+    <div id="appContent" class="hidden flex-1 flex flex-col">
+        
+        <!-- Header -->
+        <header class="app-header bg-slate-800/80 backdrop-blur-md border-b border-slate-700/50 sticky top-0 z-30 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-500 p-2.5 rounded-xl text-slate-950 font-black text-xl">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg text-white">مركز شباب العبور</h1>
+                    <p class="text-xs text-emerald-400 font-medium">قطاع النشاط الرياضي</p>
+                </div>
+            </div>
+
+            <!-- Date & Time -->
+            <div class="flex items-center gap-2 bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-700/50 text-sm font-semibold text-slate-300">
+                <i class="fa-regular fa-clock text-emerald-400"></i>
+                <span id="liveClock">--:--:--</span>
+                <span class="text-slate-600">|</span>
+                <span id="liveDate">--/--/----</span>
+            </div>
+
+            <!-- Global Search & User Actions -->
+            <div class="flex items-center gap-3">
+                <button onclick="loadSports()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm">
+                    <i class="fa-solid fa-arrows-rotate"></i> تحديث فوري
+                </button>
+                <div class="relative w-64 global-search">
+                    <input type="text" id="globalSearch" oninput="handleSearch()" placeholder="بحث عن لاعب أو كابتن..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-4 pr-10 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                    <i class="fa-solid fa-magnifying-glass absolute right-3 top-2.5 text-slate-500 text-sm"></i>
+                </div>
+                <button onclick="state.currentUser ? logoutUser() : openUserAuthModal('login')" id="userBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition border border-slate-600"><i class="fa-solid fa-user text-emerald-400"></i><span>دخول / New Account</span></button>
+                
+                    <button id="adminExportBtn" onclick="exportAllDataToExcel()" class="hidden px-4 py-2.5 bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-sm font-bold">
+                        <i class="fa-solid fa-file-excel ml-1"></i> تصدير كل البيانات Excel
+                    </button>
+                    <button id="adminImportBtn" onclick="document.getElementById('excelImportInput').click()" class="hidden px-4 py-2.5 bg-blue-600/20 text-blue-300 border border-blue-500/30 rounded-xl text-sm font-bold">
+                        <i class="fa-solid fa-file-import ml-1"></i> استيراد نسخة Excel كاملة
+                    </button>
+                    <input id="excelImportInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importAllDataFromExcel(event)">
+                    <button id="adminFederationsBtn" onclick="showFederationsPage()" class="hidden px-4 py-2.5 bg-purple-600/20 text-purple-300 border border-purple-500/30 rounded-xl text-sm font-bold">
+                        <i class="fa-solid fa-people-group ml-1"></i> الاتحادات
+                    </button>
+                    <button id="adminRemoteImportBtn" onclick="openRemoteImportModal()" class="hidden px-4 py-2.5 bg-cyan-600/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-sm font-bold">
+                        <i class="fa-solid fa-cloud-arrow-down ml-1"></i> استيراد من موقع العبور
+                    </button><button id="backupBtn" onclick="downloadBackup()" class="hidden px-4 py-2.5 bg-amber-600/20 text-amber-300 border border-amber-500/30 rounded-xl text-sm font-bold"><i class="fa-solid fa-database ml-1"></i> نسخة احتياطية</button>
+                    <button id="reportsBtn" onclick="openReportsModal()" class="px-3 py-2 rounded-xl bg-cyan-600/20 text-cyan-300 border border-cyan-500/20 text-xs font-bold"><i class="fa-solid fa-clipboard-check ml-1"></i> الحضور والتقارير</button><div id="adminTools" class="hidden flex items-center gap-2 flex-wrap"><button onclick="openUserManagementModal()" class="px-3 py-2 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/20 text-xs font-bold">الحسابات</button><button onclick="openOnlineModal()" class="px-3 py-2 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/20 text-xs font-bold">المتصلون</button><button onclick="openActivityModal()" class="px-3 py-2 rounded-xl bg-amber-600/20 text-amber-300 border border-amber-500/20 text-xs font-bold">سجل النشاط</button></div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs (الرياضات) -->
+        <nav class="bg-slate-800/40 border-b border-slate-700/50 px-6 py-3 flex gap-2 overflow-x-auto" id="sportsNav">
+            <!-- Dynamic Sports Tabs Generated Here -->
+        </nav>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 p-6 space-y-8" id="mainContainer">
+            <!-- Dynamic Active Sport View Generated Here -->
+        </main>
+    </div>
+
+
+    <!-- MODAL: Remote Import -->
+    <div id="remoteImportModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-white"><i class="fa-solid fa-cloud-arrow-down text-cyan-400 ml-2"></i>استيراد من موقع العبور</h3>
+                    <p class="text-xs text-slate-400 mt-1">سيتم مزامنة الرياضات وأسماء اللاعبين، مع تحديث اللاعب الموجود بدل تكراره.</p>
+                </div>
+                <button onclick="closeRemoteImportModal()" class="text-slate-400 hover:text-white text-xl">×</button>
+            </div>
+            <div class="grid md:grid-cols-3 gap-3 mb-4">
+                <input id="remoteSourceUrl" placeholder="رابط موقع الاتحاد" value="https://obour-youth-club-production.up.railway.app" class="bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white">
+                <input id="remoteSourceUser" placeholder="اسم حساب الاتحاد" class="bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white">
+                <input id="remoteSourcePass" type="password" placeholder="كلمة مرور حساب الاتحاد" class="bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white">
+            </div>
+            <div id="remoteImportStatus" class="rounded-xl bg-slate-800/70 p-4 text-sm text-slate-300 mb-4">أدخل رابط الاتحاد والحساب وكلمة المرور ثم اضغط «فحص المصدر».</div>
+            <div id="remoteImportList" class="space-y-2 mb-5"></div>
+            <div class="flex flex-wrap gap-2 justify-end">
+                <button onclick="closeRemoteImportModal()" class="px-4 py-2 rounded-xl bg-slate-700 text-white">إلغاء</button>
+                <button onclick="previewRemoteImport()" class="px-4 py-2 rounded-xl bg-slate-600 hover:bg-slate-500 text-white">فحص المصدر</button>
+                <button onclick="syncRemoteImport()" id="remoteImportSyncBtn" disabled class="px-4 py-2 rounded-xl bg-cyan-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold">استيراد المحدد</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Admin Login -->
+    <div id="adminLoginModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 w-full max-w-sm">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-lock text-emerald-400"></i> تسجيل دخول الأدمن
+            </h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1">اسم المستخدم</label>
+                    <input type="text" id="adminUser" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1">كلمة المرور</label>
+                    <input type="password" id="adminPass" onkeydown="handleAdminPasswordKeydown(event)" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <button onclick="loginAdmin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-sm transition mt-2">تسجيل الدخول</button>
+                <button onclick="closeModal('adminLoginModal')" class="w-full bg-slate-800 text-slate-400 py-2 rounded-lg text-sm">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: User Authentication -->
+    <div id="userAuthModal" class="fixed inset-0 bg-black/65 backdrop-blur-sm hidden z-[80]">
+        <div class="auth-drawer absolute top-0 right-0 h-full w-full max-w-lg bg-slate-950/95 border-l border-slate-700/70 shadow-2xl p-6 md:p-8 overflow-y-auto">
+            <div class="flex items-center justify-between mb-7"><div><p class="text-emerald-300 text-xs font-bold tracking-widest">SPORTS ACCOUNT</p><h3 id="authDrawerTitle" class="text-2xl font-black text-white">تسجيل الدخول</h3></div><button onclick="closeModal('userAuthModal')" class="w-10 h-10 rounded-xl bg-slate-800 text-slate-300 hover:text-white">✕</button></div>
+            <div class="flex gap-2 mb-6"><button onclick="showAuthMode('login')" id="authLoginTab" class="flex-1 bg-emerald-600 rounded-xl py-3 font-bold">Sign In</button><button onclick="showAuthMode('register')" id="authRegisterTab" class="flex-1 bg-slate-800 rounded-xl py-3 font-bold">New Account</button></div>
+            <div class="space-y-4">
+                
+                <div><label class="text-xs text-slate-400 block mb-1">اسم المستخدم</label><input id="userUsername" type="text" placeholder="Username" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 text-white"></div>
+                <div><label class="text-xs text-slate-400 block mb-1">كلمة المرور</label><input id="userPassword" type="password" onkeydown="if(event.key==='Enter'){event.preventDefault();submitUserAuth();}" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 text-white"></div>
+                <div id="registerNameWrap" class="hidden"><label class="text-xs text-slate-400 block mb-1">الاسم المعروض <span class="text-slate-500">(اختياري)</span></label><input id="userDisplayName" placeholder="يمكن تركه فارغًا" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 text-white"></div>
+                
+                <button onclick="submitUserAuth()" id="userAuthAction" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 rounded-xl py-3.5 font-black">Sign In</button>
+                <p id="userAuthError" class="text-rose-400 text-sm hidden"></p>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Federations -->
+    <div id="federationModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4"><div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl p-6"><div class="flex justify-between mb-5"><h3 class="text-xl font-black text-emerald-400">الاتحادات</h3><button onclick="closeModal('federationModal')">✕</button></div><div class="grid md:grid-cols-3 gap-3 mb-5"><input id="federationName" placeholder="اسم الاتحاد" class="bg-slate-800 border border-slate-700 rounded-xl p-3"><input id="federationSport" placeholder="اللعبة" class="bg-slate-800 border border-slate-700 rounded-xl p-3"><button onclick="addFederation()" class="bg-emerald-600 rounded-xl font-bold">+ إضافة اتحاد</button></div><div id="federationList"></div></div></div>
+
+    <div id="federationPlayersModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[80] p-4"><div class="glass-card rounded-3xl w-full max-w-4xl p-5 md:p-7 modal-panel"><div class="flex justify-between items-center mb-4"><div><h3 class="text-xl font-black text-purple-300">ربط لاعبين بالاتحاد</h3><p id="federationAssignTitle" class="text-xs text-slate-400 mt-1"></p></div><button onclick="closeModal('federationPlayersModal')" class="text-slate-400">✕</button></div><input id="federationPlayerSearch" oninput="renderFederationPlayerPicker()" placeholder="ابحث باسم اللاعب أو رقم القيد..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-3"><div id="federationPlayerPicker" class="max-h-[55vh] overflow-auto space-y-2"></div><div class="mt-5 flex justify-end"><button onclick="saveFederationPlayerLinks()" class="bg-purple-600 hover:bg-purple-500 px-5 py-2.5 rounded-xl font-bold">حفظ الربط</button></div></div></div>
+    <!-- MODAL: Login Activity -->
+    <div id="activityModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4"><div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl p-6 max-h-[90vh] overflow-auto"><div class="flex justify-between mb-5"><h3 class="text-xl font-black text-emerald-400">سجل دخول المستخدمين</h3><button onclick="closeModal('activityModal')">✕</button></div><div id="activityList"></div></div></div>
+
+    <div id="userManagementModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4"><div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-5xl p-6 max-h-[90vh] overflow-auto modal-panel"><div class="flex justify-between mb-5"><h3 class="text-xl font-black text-indigo-300">إدارة الحسابات والصلاحيات</h3><button onclick="closeModal('userManagementModal')">✕</button></div><div id="userManagementList"></div></div></div>
+    <div id="onlineModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4"><div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xl p-6 modal-panel"><div class="flex justify-between mb-5"><h3 class="text-xl font-black text-emerald-300">المستخدمون المتصلون الآن</h3><button onclick="closeModal('onlineModal')">✕</button></div><div id="onlineList"></div></div></div>
+        <!-- MODAL: Player Details & Print Form -->
+    <div id="playerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div id="printableModal" class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 text-slate-100 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('playerModal')" class="no-print absolute top-4 left-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <!-- Form Header (For Print) -->
+            <div class="text-center border-b border-slate-700 pb-4 mb-6">
+                <h2 class="text-2xl font-black text-emerald-400">مركز شباب العبور</h2>
+                <p class="text-sm text-slate-300">استمارة بيانات لاعب - قطاع النشاط الرياضي</p>
+            </div>
+
+            <!-- Player Data Content -->
+            <div id="playerModalContent" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <!-- Data populated dynamically -->
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-6 pt-4 border-t border-slate-800 flex flex-wrap justify-end gap-3 no-print">
+                ${canEditSport(foundSport) ? `<button onclick="document.getElementById('photoUploadInput').click()" class="bg-purple-600/20 text-purple-300 border border-purple-500/20 font-bold px-4 py-2 rounded-xl text-sm"><i class="fa-solid fa-camera ml-1"></i> صورة اللاعب</button><input id="photoUploadInput" type="file" accept="image/*" class="hidden" onchange="uploadPlayerPhoto(${foundSport.id},${foundPlayer.id},this.files[0])"><button onclick="document.getElementById('receiptUploadInput').click()" class="bg-amber-600/20 text-amber-300 border border-amber-500/20 font-bold px-4 py-2 rounded-xl text-sm"><i class="fa-solid fa-receipt ml-1"></i> أرشفة الإيصال</button><input id="receiptUploadInput" type="file" accept="image/*,.pdf" class="hidden" onchange="uploadPlayerReceipt(${foundSport.id},${foundPlayer.id},this.files[0])">` : ''}
+                <button onclick="document.body.classList.add('print-form'); window.print(); setTimeout(()=>document.body.classList.remove('print-form'),300)" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> طباعة الاستمارة
+                </button>
+                <button onclick="closeModal('playerModal')" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-sm">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Coach Details -->
+    <div id="coachModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full p-6 text-slate-100 max-h-[90vh] overflow-y-auto relative">
+            <button onclick="closeModal('coachModal')" class="no-print absolute top-4 left-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="coachModalContent" class="space-y-4"></div>
+            <div class="mt-6 pt-4 border-t border-slate-800 flex flex-wrap justify-between gap-3 no-print">
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="window.printCoach()" class="bg-emerald-600 hover:bg-emerald-500 text-black font-bold px-5 py-2 rounded-xl text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i> طباعة بيانات الكابتن
+                    </button>
+                    <button onclick="saveCoachReportAsPdf()" class="bg-blue-600 hover:bg-blue-500 text-black font-bold px-5 py-2 rounded-xl text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-file-arrow-down"></i> حفظ التقرير كـ PDF
+                    </button>
+                </div>
+                <button onclick="closeModal('coachModal')" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-sm">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Assign Coach to Selected Players -->
+    <div id="assignCoachModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 text-slate-100 max-h-[90vh] overflow-y-auto relative">
+            <button onclick="closeModal('assignCoachModal')" class="no-print absolute top-4 left-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="text-center mb-4">
+                <h2 class="text-2xl font-black text-emerald-400">تعيين كابتن للاعبين المحددين</h2>
+                <p class="text-slate-400 text-sm">اختر كابتنًا من القائمة التالية:</p>
+            </div>
+            <div id="assignCoachList" class="grid grid-cols-1 gap-3"></div>
+            <div class="mt-6 pt-4 border-t border-slate-800 flex justify-end gap-3 no-print">
+                <button onclick="closeModal('assignCoachModal')" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-sm">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Excel Import Sport & Coach Selection -->
+    <div id="importSelectionModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 text-slate-100 max-h-[90vh] overflow-y-auto relative">
+            <button onclick="cancelImportSelection()" class="no-print absolute top-4 left-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="space-y-4">
+                <div class="text-center">
+                    <h2 class="text-2xl font-black text-emerald-400">رفع داتا Excel</h2>
+                    <p class="text-slate-400 text-sm">اختر الرياضة والكابتن قبل استيراد الملف.</p>
+                </div>
+                <div class="bg-slate-800/70 p-4 rounded-2xl border border-slate-700">
+                    <p class="text-slate-300 text-sm mb-2" id="importFileName">الملف: لم يتم اختيار ملف</p>
+                    <label class="block text-slate-300 text-sm mb-1">اختر الرياضة</label>
+                    <select id="importSportSelect" onchange="updateImportCoachList()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 mb-4">
+                        <option value="">اختر الرياضة</option>
+                    </select>
+
+                    <label class="block text-slate-300 text-sm mb-1">اختر الكابتن</label>
+                    <select id="importCoachSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 mb-4">
+                        <option value="">اختر الرياضة أولاً</option>
+                    </select>
+                </div>
+                <div class="flex flex-wrap gap-3 justify-end">
+                    <button onclick="cancelImportSelection()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm">إلغاء</button>
+                    <button onclick="confirmImportSelection()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm">استيراد الآن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed inset-0 pointer-events-none z-0 opacity-40 animated-grid"></div>
+    <section id="federationsPage" class="hidden min-h-screen relative z-10 p-6 md:p-10">
+      <div class="max-w-7xl mx-auto">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+          <div><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-400/20 text-purple-300 text-xs font-bold mb-3"><i class="fa-solid fa-sparkles"></i> مركز الاتحادات</div>
+          <h1 class="text-3xl md:text-5xl font-black shimmer-title">الاتحادات الرياضية</h1><p class="text-slate-400 mt-2">إدارة الاتحادات وربطها بالأنشطة الرياضية واللاعبين.</p></div>
+          <button onclick="showMainPage()" class="bg-slate-800 hover:bg-slate-700 px-5 py-3 rounded-2xl font-bold border border-slate-700"><i class="fa-solid fa-arrow-right ml-2"></i> العودة للنظام</button>
+        </div>
+        <div class="glass-card rounded-3xl p-5 md:p-7 mb-6 neon-ring"><div class="grid md:grid-cols-3 gap-3">
+          <input id="pageFederationName" placeholder="اسم الاتحاد" class="bg-slate-950/80 border border-slate-700 rounded-2xl p-3.5 text-white">
+          <input id="pageFederationSport" placeholder="اللعبة التابعة للاتحاد" class="bg-slate-950/80 border border-slate-700 rounded-2xl p-3.5 text-white">
+          <button onclick="addFederationFromPage()" class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl font-black py-3"><i class="fa-solid fa-plus ml-2"></i> إضافة اتحاد</button>
+        </div></div>
+        <div id="federationsPageList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+    </section>
+    <div id="membershipExpiryModal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-[70] p-4">
+      <div class="glass-card rounded-3xl max-w-3xl w-full p-6 md:p-8 float-in border border-amber-400/20">
+        <div class="flex items-start justify-between gap-4 mb-5"><div>
+          <div class="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-300 flex items-center justify-center text-2xl mb-3 pulse-soft"><i class="fa-solid fa-bell"></i></div>
+          <h2 class="text-2xl font-black text-white">تنبيه انتهاء الشهر</h2>
+          <p class="text-slate-400 text-sm mt-1">يتم تنبيهك تلقائياً عند انتهاء اشتراك أي لاعب. راجع اللاعبين الذين لم يسددوا الشهر الحالي.</p>
+        </div><button onclick="closeModal('membershipExpiryModal')" class="text-slate-400 hover:text-white text-xl">✕</button></div>
+        <div id="membershipExpiryList" class="space-y-2 max-h-[55vh] overflow-auto"></div>
+        <div class="mt-6 flex justify-end"><button onclick="closeModal('membershipExpiryModal')" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded-xl font-bold">حسناً</button></div>
+      </div>
+    </div>
+
+    <div id="reportsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[80] p-4">
+      <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-5xl max-h-[92vh] overflow-y-auto p-5 md:p-7">
+        <div class="flex items-center justify-between gap-3 mb-5 no-print"><div><h2 class="text-2xl font-black text-white">الحضور والاشتراكات والتقارير</h2><p class="text-slate-400 text-sm">سجل الحضور بتاريخ محدد وراجع أرشيف الاشتراكات المنتهية.</p></div><button onclick="closeModal('reportsModal')" class="text-slate-400 text-xl">✕</button></div>
+        <div class="grid md:grid-cols-3 gap-4 mb-5 no-print">
+          <div><label class="text-xs text-slate-400 block mb-1">اليوم</label><input id="attendanceDate" type="date" onchange="populateAttendance()" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white"></div>
+          <div class="flex items-end"><button onclick="saveAttendance().catch(e=>alert(e.message))" class="w-full bg-emerald-600 hover:bg-emerald-500 rounded-xl p-3 font-bold">حفظ الحضور والغياب</button></div>
+          <div class="flex items-end gap-2"><button onclick="printAttendanceReport()" class="flex-1 bg-slate-700 rounded-xl p-3 font-bold">طباعة</button><button onclick="exportAttendanceExcel()" class="flex-1 bg-emerald-600/20 text-emerald-300 border border-emerald-500/20 rounded-xl p-3 font-bold">Excel</button><button onclick="requestSmartNotifications()" class="flex-1 bg-amber-600/20 text-amber-300 border border-amber-500/20 rounded-xl p-3 font-bold">تفعيل التنبيهات</button></div>
+        </div>
+        <div class="mb-7"><h3 class="font-black text-white mb-3">حضور لعبة: <span class="text-emerald-400">${escapeHtml(state.sports[state.activeSportIndex]?.name||'')}</span></h3>
+          <div class="overflow-x-auto"><table class="w-full text-right" id="attendanceReportTable"><thead class="bg-slate-950"><tr><th class="p-3">اسم اللاعب</th><th class="p-3">الحالة</th></tr></thead><tbody id="attendanceBody"></tbody></table></div>
+        </div>
+        <div><h3 class="font-black text-white mb-3">أرشيف الاشتراكات المنتهية بعد يوم 5</h3><div id="archiveBody"></div></div>
+      </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const LOCAL_ADMIN_USERNAME = 'Fasmo';
+        const LOCAL_ADMIN_PASSWORD = 'Fasmo123#';
+        const LOCAL_APP_PIN = ''; // Home page no longer uses an app password
+        let authToken = localStorage.getItem('authToken') || '';
+        let authMode = 'login';
+
+        // Default App State
+        let state = {
+            isAdminLoggedIn: false,
+            activeSportIndex: 0,
+            sports: [],
+            selectedPlayerIds: new Set(),
+            playerPageIndex: 0,
+            playerSearchQuery: '',
+            importDestinationSportId: null,
+            importDestinationCoachName: '',
+            importFile: null, currentUser: null, userProfile: null, federations: [], activityLog: [], userPermissions: []
+        };
+
+        const apiBase = '';
+        const PLAYERS_PER_PAGE = 100;
+
+        function loadSelectedPlayerIds() {
+            try {
+                const saved = localStorage.getItem('selectedPlayerIds');
+                if (!saved) return;
+                const ids = JSON.parse(saved);
+                if (Array.isArray(ids)) {
+                    state.selectedPlayerIds = new Set(ids.map(id => Number(id)).filter(id => !Number.isNaN(id)));
+                }
+            } catch (error) {
+                console.warn('Failed to load selected players from localStorage', error);
+            }
+        }
+
+        function saveSelectedPlayerIds() {
+            try {
+                localStorage.setItem('selectedPlayerIds', JSON.stringify(Array.from(state.selectedPlayerIds)));
+            } catch (error) {
+                console.warn('Failed to save selected players to localStorage', error);
+            }
+        }
+
+        function getVisiblePlayers(sport) {
+            const query = state.playerSearchQuery.toLowerCase().trim();
+            if (!query) return sport.players;
+            return sport.players.filter(p =>
+                p.name.toLowerCase().includes(query) ||
+                p.coach.toLowerCase().includes(query) ||
+                p.registrationNo.toLowerCase().includes(query)
+            );
+        }
+
+        // App Initialization & Security PIN
+        function unlockApp(){ enterEntryChoice(); }
+        function enterEntryChoice(){openEntryChoice();}
+        function openEntryChoice(){const m=document.getElementById('entryChoiceModal');m.classList.remove('hidden');m.classList.add('flex');}
+        function enterApplication(){document.getElementById('lockScreen').classList.add('hidden');document.getElementById('appContent').classList.remove('hidden');initApp();}
+        function showWelcome(username){const t=document.getElementById('welcomeToast'),txt=document.getElementById('welcomeToastText');if(!t||!txt)return;txt.textContent=`Welcome, ${username}`;t.classList.remove('translate-y-[-140%]');t.classList.add('translate-y-0');clearTimeout(window.__welcomeTimer);window.__welcomeTimer=setTimeout(()=>{t.classList.add('translate-y-[-140%]');t.classList.remove('translate-y-0')},3000);}
+        function sportIcon(name,custom){
+            const n=String(name||'').trim().toLowerCase();
+            if(/كره?\s*قدم|كرة\s*قدم|football|soccer/.test(n)) return 'fa-solid fa-futbol';
+            if(/كره?\s*سله|كرة\s*سلة|basket/.test(n)) return 'fa-solid fa-basketball';
+            if(/كره?\s*طائره|كرة\s*طائرة|volley/.test(n)) return 'fa-solid fa-volleyball';
+            if(/سباحه|سباحة|swim/.test(n)) return 'fa-solid fa-person-swimming';
+            if(/تنس|tennis/.test(n)) return 'fa-solid fa-table-tennis-paddle-ball';
+            if(/تنس\s*ارض|tennis\s*court/.test(n)) return 'fa-solid fa-baseball';
+            if(/يد|كره\s*يد|كرة\s*يد|handball/.test(n)) return 'fa-solid fa-hand';
+            if(/جودو|كاراتيه|تايكوندو|كونغ\s*فو|martial/.test(n)) return 'fa-solid fa-person-running';
+            if(/جمباز|gymnast/.test(n)) return 'fa-solid fa-person-walking';
+            if(/ألعاب\s*قوى|العاب\s*قوى|athletic|athletics/.test(n)) return 'fa-solid fa-person-running';
+            if(/ملاكمه|ملاكمة|boxing/.test(n)) return 'fa-solid fa-hand-fist';
+            if(/مصارعه|مصارعة|wrestling/.test(n)) return 'fa-solid fa-people-arrows';
+            if(/رمايه|رماية|shooting/.test(n)) return 'fa-solid fa-bullseye';
+            if(/فروسية|فروسيه|horse/.test(n)) return 'fa-solid fa-horse';
+            if(/دراجات|cycling|bike/.test(n)) return 'fa-solid fa-bicycle';
+            if(/اسكواش|squash/.test(n)) return 'fa-solid fa-table-tennis-paddle-ball';
+            if(/ريشه|ريشة|badminton/.test(n)) return 'fa-solid fa-feather';
+            if(/شطرنج|chess/.test(n)) return 'fa-solid fa-chess-knight';
+            if(/هوكي|hockey/.test(n)) return 'fa-solid fa-hockey-puck';
+            if(/تجديف|rowing/.test(n)) return 'fa-solid fa-person-swimming';
+            if(/رفع\s*أثقال|رفع\s*اثقال|weight/.test(n)) return 'fa-solid fa-dumbbell';
+            if(/رغبي|rugby/.test(n)) return 'fa-solid fa-football';
+            if(/بلياردو|billard|billiard/.test(n)) return 'fa-solid fa-circle-dot';
+            return custom || 'fa-solid fa-medal';
+        }
+        async function apiFetch(url,opts={}){opts.headers={...(opts.headers||{}),...(authToken?{Authorization:'Bearer '+authToken}:{})};let r;try{r=await fetch(url,opts);}catch(e){throw new Error('تعذر الاتصال بالسيرفر. تأكد أن الموقع يعمل ثم حاول مرة أخرى.');}if(r.status===401){authToken='';localStorage.removeItem('authToken');}return r;}
+async function apiJson(url,opts={}){const r=await apiFetch(url,opts);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||d.error||`حدث خطأ (${r.status})`);return d;}
+function showAppToast(message,type='success'){const box=document.getElementById('welcomeToast');const text=document.getElementById('welcomeToastText');if(!box||!text)return;box.className='fixed top-5 left-1/2 -translate-x-1/2 translate-y-0 z-[100] transition-transform duration-300 pointer-events-none';box.querySelector('div').className='glass-card toast-modern px-6 py-3 rounded-2xl border '+(type==='error'?'border-rose-400/40':'border-emerald-400/30')+' shadow-2xl';text.textContent=message;clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(()=>box.classList.add('translate-y-[-140%]'),3000);}
+
+        async function loadSports(retryCount=0) {
+            try {
+                const res = await apiFetch(`${apiBase}/api/sports`, {cache:'no-store'});
+                const raw = await res.text();
+                let data = {};
+                try { data = raw ? JSON.parse(raw) : {}; } catch (_) {
+                    throw new Error(`السيرفر أرسل استجابة غير صالحة (${res.status})`);
+                }
+                if (!res.ok) throw new Error(data.message || `تعذر تحميل البيانات (${res.status})`);
+                state.sports = Array.isArray(data) ? data : [];
+                if (state.activeSportIndex >= state.sports.length) state.activeSportIndex = 0;
+                renderNav();
+                renderMainView();
+                return state.sports;
+            } catch (error) {
+                console.error('Failed to load sports', error);
+                if (retryCount < 2) {
+                    await new Promise(r=>setTimeout(r, 700*(retryCount+1)));
+                    return loadSports(retryCount+1);
+                }
+                showAppToast(error.message || 'فشل في تحميل البيانات من السيرفر', 'error');
+                return [];
+            }
+        }
+
+        function connectLiveSync() {
+            const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+            const socket = new WebSocket(`${protocol}://${location.host}`);
+
+            socket.addEventListener('message', async (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'data-changed') {
+                        clearTimeout(window.__dataRefreshTimer);
+                        window.__dataRefreshTimer=setTimeout(async()=>{await loadSports();if(document.getElementById('federationsPage')&&!document.getElementById('federationsPage').classList.contains('hidden'))renderFederationsPage();},250);
+                    } else if (msg.type === 'presence') {
+                        // Presence updates must not reload thousands of players.
+                    } else if (Array.isArray(msg.sports)) {
+                        state.sports = msg.sports;
+                        renderNav(); renderMainView();
+                    }
+                } catch (error) { console.warn('Live sync update skipped', error); }
+            });
+
+            socket.addEventListener('error', () => {
+                console.warn('Live sync websocket error');
+            });
+
+            socket.addEventListener('close', () => {
+                console.warn('Live sync websocket closed, reconnecting...');
+                setTimeout(connectLiveSync, 3000);
+            });
+        }
+
+        // Live Clock & Date
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('liveClock').innerText = now.toLocaleTimeString('ar-EG');
+            document.getElementById('liveDate').innerText = now.toLocaleDateString('ar-EG');
+        }, 1000);
+
+        async function restoreSession(){if(!authToken)return;try{const r=await apiFetch('/api/auth/heartbeat',{method:'POST'});if(!r.ok)return;const d=await r.json();state.currentUser=d.user;if(d.user.role==='admin'){state.isAdminLoggedIn=true;showAdminTools();const adminBtn=document.getElementById('adminBtn');if(adminBtn)adminBtn.innerHTML='<i class="fa-solid fa-right-from-bracket text-rose-400"></i><span>خروج الأدمن</span>';}else{state.userPermissions=d.user.permissions||((d.user.sports||[d.user.sport]).filter(Boolean).map(sp=>({sport:sp,canEdit:d.user.canEdit})));const b=document.getElementById('userBtn');if(b)b.innerHTML=`<i class="fa-solid fa-right-from-bracket text-rose-400"></i><span>${d.user.username} • ${(d.user.sports||[d.user.sport]).filter(Boolean).join('، ')}</span>`;}}catch(e){}}
+
+        function initApp() {
+            loadSelectedPlayerIds();
+            if(state.isAdminLoggedIn){const b=document.getElementById('adminBtn');if(b)b.innerHTML='<i class="fa-solid fa-right-from-bracket text-rose-400"></i><span>خروج الأدمن</span>';}
+            restoreSession().finally(()=>loadSports());
+            if(state.isAdminLoggedIn) loadFederations();
+            connectLiveSync();
+            setTimeout(checkMembershipExpiry, 1200);
+            setInterval(checkMembershipExpiry, 60 * 60 * 1000);
+        }
+
+        // Navigation
+        function renderNav() {
+            const nav = document.getElementById('sportsNav');
+            const visibleSports = state.sports.filter(canViewSport);
+            if (!state.isAdminLoggedIn && visibleSports.length && !canViewSport(state.sports[state.activeSportIndex])) { state.activeSportIndex = state.sports.findIndex(s => canViewSport(s)); }
+            nav.innerHTML = visibleSports.map((sport) => { const index = state.sports.indexOf(sport); return `
+                <button onclick="switchSport(${index})" class="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 whitespace-nowrap transition ${index === state.activeSportIndex ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'}">
+                    <span class="sport-logo"><i class="${sportIcon(sport.name, sport.icon)}"></i></span><span>${sport.name}</span>
+                </button>
+            `}).join('') + (state.isAdminLoggedIn ? `
+                <button onclick="addNewSportPrompt()" class="px-4 py-2.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm font-bold hover:bg-emerald-600/30 transition">
+                    <i class="fa-solid fa-plus ml-1"></i> إضافة لعبة
+                </button>
+            ` : '');
+        }
+
+        function switchSport(index) {
+            state.activeSportIndex = index;
+            renderNav();
+            renderMainView();
+        }
+
+        function canViewSport(sport) {
+            if (state.isAdminLoggedIn) return true;
+            const perms = state.userPermissions || [];
+            return perms.some(x => x.sport === sport.name || x.sportId === sport.id);
+        }
+        function canEditSport(sport) {
+            if (state.isAdminLoggedIn) return true;
+            const perms = state.userPermissions || [];
+            return perms.some(x => (x.sport === sport.name || x.sportId === sport.id) && x.canEdit === true);
+        }
+
+        // Render Workspace
+        function renderMainView() {
+            const container = document.getElementById('mainContainer');
+            const sport = state.sports[state.activeSportIndex];
+
+            if (!sport || !canViewSport(sport)) {
+                container.innerHTML = '<div class="text-center py-12 text-slate-500">لا توجد ألعاب متاحة لهذا الحساب.</div>';
+                return;
+            }
+
+            const visiblePlayers = getVisiblePlayers(sport);
+            const totalPages = Math.max(1, Math.ceil(visiblePlayers.length / PLAYERS_PER_PAGE));
+            if (state.playerPageIndex >= totalPages) state.playerPageIndex = totalPages - 1;
+
+            const currentPagePlayers = visiblePlayers.slice(
+                state.playerPageIndex * PLAYERS_PER_PAGE,
+                (state.playerPageIndex + 1) * PLAYERS_PER_PAGE
+            );
+            const pageStart = state.playerPageIndex * PLAYERS_PER_PAGE + 1;
+            const pageEnd = pageStart + currentPagePlayers.length - 1;
+            const sportBg = ''; // local-only visual layer; avoids remote image requests and UI stalls
+
+            const adminControls = (state.isAdminLoggedIn || canEditSport(sport)) ? `
+                <div class="bg-emerald-950/30 border border-emerald-500/20 p-4 rounded-2xl flex flex-wrap gap-2 items-center">
+                    <div class="text-emerald-400 text-sm font-bold ml-auto"><i class="fa-solid fa-user-pen"></i> أدوات الإدارة والصلاحيات</div>
+                    <button onclick="addCoachPrompt()" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg ${state.isAdminLoggedIn?'':'hidden'}">+ إضافة كابتن</button>
+                    <button onclick="addPlayerPrompt()" class="bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg">+ إضافة لاعب</button>
+                    <button onclick="assignCoachToSelected()" class="bg-cyan-600 text-white text-xs font-bold px-3 py-2 rounded-lg ${state.isAdminLoggedIn?'':'hidden'}">تعيين كابتن للمحدد</button>
+                    <button onclick="prepareImportUpload()" class="bg-blue-600 text-white text-xs font-bold px-3 py-2 rounded-lg ${state.isAdminLoggedIn?'':'hidden'}">رفع Excel</button>
+                    <input type="file" accept=".xlsx,.xls,.csv" id="importFileInput" class="hidden" onchange="importExcel(event)">
+                    <button onclick="deleteCurrentSport()" class="bg-rose-600 text-white text-xs font-bold px-3 py-2 rounded-lg ${state.isAdminLoggedIn?'':'hidden'}">حذف اللعبة</button><button onclick="checkMembershipExpiry()" class="bg-amber-500/20 text-amber-300 border border-amber-400/20 text-xs font-bold px-3 py-2 rounded-lg"><i class="fa-solid fa-bell ml-1"></i> تنبيه الاشتراكات</button>
+                </div>` : '';
+
+            const coachesHtml = (sport.coaches || []).map(c => `
+                <button type="button" class="w-full text-right bg-slate-900/80 p-4 rounded-xl border border-slate-700 flex justify-between items-center hover:border-emerald-500/60 hover:bg-slate-900 transition"
+                    onclick="showCoachDetails(${JSON.stringify(c.name)}, ${JSON.stringify(c.schedule)})">
+                    <span>
+                        <span class="block font-bold text-emerald-300 text-sm">${String(c.name || 'كابتن').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}</span>
+                        <span class="block text-xs text-slate-400 mt-1"><i class="fa-regular fa-clock ml-1"></i> ${String(c.schedule || 'غير محدد').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}</span>
+                    </span>
+                    <span class="bg-emerald-500/10 text-xs px-2.5 py-1 rounded-lg text-emerald-300">عرض اللاعبين</span>
+                </button>`).join('');
+
+            const playersHtml = currentPagePlayers.map(p => `
+                <tr class="${isPaidForCurrentMonth(p) ? 'hover:bg-slate-800/50' : 'bg-rose-950/40 border-r-4 border-rose-500'} transition">
+                    ${(state.isAdminLoggedIn && canEditSport(sport)) ? `<td class="p-3 text-center"><input type="checkbox" onclick="event.stopPropagation(); togglePlayerSelection(${p.id})" ${state.selectedPlayerIds.has(p.id) ? 'checked' : ''}></td>` : ''}
+                    <td class="p-3 font-bold text-white cursor-pointer hover:text-emerald-400" onclick="openPlayerModal(${p.id})">${p.name || '-'}</td>
+                    <td class="p-3 text-xs text-slate-400">${p.registrationNo || '-'}</td>
+                    <td class="p-3 text-xs">${p.coach || '-'}</td>
+                    <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full ${p.isPaid ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">${p.isPaid ? `مسدد حتى ${p.paidThroughMonth || 'الشهر الحالي'}` : 'غير مسدد'}</span></td>
+                    ${state.isAdminLoggedIn ? `<td class="p-3 text-center"><button onclick="deletePlayer(${p.id})" class="bg-rose-600/20 text-rose-400 px-2.5 py-1 rounded text-xs">حذف</button></td>` : ''}
+                </tr>`).join('');
+
+            container.innerHTML = `
+                <div class="relative -m-6 p-6 min-h-screen overflow-hidden"><div class="absolute inset-0 opacity-[0.035] pointer-events-none select-none flex items-center justify-center text-[12vw] md:text-[10vw] font-black whitespace-nowrap">${String(sport.name||'').replace(/</g,'&lt;')}</div><div class="relative z-10">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-slate-800/60 p-4 rounded-2xl"><p class="text-xs text-slate-400">المدير الفني</p><p class="text-lg font-bold text-emerald-400">${sport.technicalDirector || '-'}</p></div>
+                        <div class="bg-slate-800/60 p-4 rounded-2xl"><p class="text-xs text-slate-400">عدد الكباتن</p><p class="text-lg font-bold text-white">${(sport.coaches || []).length}</p></div>
+                        <div class="bg-slate-800/60 p-4 rounded-2xl"><p class="text-xs text-slate-400">عدد اللاعبين</p><p class="text-lg font-bold text-white">${(sport.players || []).length}</p></div>
+                        <div class="bg-slate-800/60 p-4 rounded-2xl"><p class="text-xs text-slate-400">الاستمارة</p>${sport.formUrl ? `<a href="${sport.formUrl}" target="_blank" class="text-emerald-400 text-sm font-bold underline">تحميل</a>` : '<span class="text-xs text-slate-500">لا توجد</span>'}</div>
+                    </div>
+                    ${adminControls}
+                    <div class="bg-slate-800/40 rounded-2xl border border-slate-700/50 p-5 mt-6">
+                        <h3 class="font-bold text-white mb-4"><i class="fa-solid fa-clipboard-user text-emerald-400"></i> الكباتن</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${coachesHtml || '<p class="text-slate-500">لا يوجد كباتن.</p>'}</div>
+                    </div>
+                    <div class="bg-slate-800/40 rounded-2xl border border-slate-700/50 p-5 mt-6">
+                        <h3 class="font-bold text-white mb-4"><i class="fa-solid fa-users text-emerald-400"></i> اللاعبين</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right text-sm">
+                                <thead class="bg-slate-900 text-slate-400"><tr>
+                                    ${state.isAdminLoggedIn ? '<th class="p-3">تحديد</th>' : ''}
+                                    <th class="p-3">اسم اللاعب</th><th class="p-3">رقم القيد</th><th class="p-3">الكابتن</th><th class="p-3">مسدد حتى شهر</th><th class="p-3">الأيام</th>${state.isAdminLoggedIn ? '<th class="p-3">إجراء</th>' : ''}
+                                </tr></thead>
+                                <tbody class="divide-y divide-slate-800">${playersHtml}</tbody>
+                            </table>
+                        </div>
+                        <div class="mt-4 flex justify-between items-center text-xs text-slate-300">
+                            <span>يعرض ${visiblePlayers.length ? pageStart : 0} - ${pageEnd} من ${visiblePlayers.length}</span>
+                            <div class="flex gap-2">
+                                <button onclick="goToPlayerPage(-1)" class="px-3 py-2 rounded-xl bg-slate-800" ${state.playerPageIndex === 0 ? 'disabled' : ''}>السابق</button>
+                                <span class="px-2 py-2">صفحة ${state.playerPageIndex + 1} من ${totalPages}</span>
+                                <button onclick="goToPlayerPage(1)" class="px-3 py-2 rounded-xl bg-slate-800" ${state.playerPageIndex + 1 >= totalPages ? 'disabled' : ''}>التالي</button>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>`;
+        }
+
+function adminLogin(){ loginAdmin(); }
+
+        // Admin Authentication
+        function goToPlayerPage(delta) {
+            const sport = state.sports[state.activeSportIndex];
+            const visiblePlayers = getVisiblePlayers(sport);
+            const totalPages = Math.max(1, Math.ceil(visiblePlayers.length / PLAYERS_PER_PAGE));
+            state.playerPageIndex = Math.max(0, Math.min(state.playerPageIndex + delta, totalPages - 1));
+            renderMainView();
+        }
+
+        function openAdminModal(){if(state.isAdminLoggedIn){logoutUser();return;}document.getElementById('adminLoginModal').classList.remove('hidden');document.getElementById('adminLoginModal').classList.add('flex');}
+
+        async function loginAdmin(){const u=document.getElementById('adminUser').value.trim(),p=document.getElementById('adminPass').value;try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:u,pass:p})});const d=await r.json();if(!r.ok)throw Error(d.message||'بيانات غير صحيحة');authToken=d.token;localStorage.setItem('authToken',authToken);state.isAdminLoggedIn=true;state.currentUser=d.user;closeModal('adminLoginModal');enterApplication();renderNav();renderMainView();showAdminTools();await loadFederations();showWelcome(d.user.username);}catch(e){alert(e.message||'بيانات أدمن غير صحيحة');}}
+        function showAdminTools(){const h=document.getElementById('adminTools');if(h)h.classList.remove('hidden');['adminExportBtn','adminImportBtn','adminFederationsBtn','adminRemoteImportBtn','backupBtn'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));}
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            document.getElementById(id).classList.remove('flex');
+        }
+
+        // Player Modal & Details Form View
+        function openPlayerModal(playerId) {
+            let foundPlayer = null, foundSport = null;
+            for (const s of state.sports) {
+                const p = (s.players || []).find(x => Number(x.id) === Number(playerId));
+                if (p) { foundPlayer = p; foundSport = s; break; }
+            }
+            if (!foundPlayer) return;
+            const esc = x => String(x ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+            const photo = esc(foundPlayer.photo || 'icon.svg');
+            const file = esc(foundPlayer.fileUrl || '');
+            document.getElementById('playerModalContent').innerHTML = `
+                <div class="col-span-1 md:col-span-2 flex flex-col sm:flex-row items-center gap-5 bg-slate-800/50 p-4 rounded-2xl">
+                    <img src="${photo}" onerror="this.src='icon.svg'" class="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover border border-slate-600 shadow-xl bg-slate-950" alt="صورة اللاعب">
+                    <div class="text-center sm:text-right"><h3 class="text-2xl font-black text-white">${esc(foundPlayer.name)}</h3><p class="text-emerald-400 mt-1">${esc(foundSport.name)}</p>${file?`<a href="${file}" target="_blank" rel="noopener" class="inline-flex mt-3 px-4 py-2 rounded-xl bg-purple-600/20 text-purple-300 font-bold text-sm"><i class="fa-solid fa-file ml-2"></i> فتح الملف المرفق</a>`:'<span class="inline-block mt-3 text-xs text-slate-500">لا يوجد ملف مرفق</span>'}</div>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">تاريخ تسجيل اللاعب:</span><strong>${esc(foundPlayer.registrationDate||'غير مسجل')}</strong></div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">اسم المدرب:</span><strong>${esc(foundPlayer.coach||'غير محدد')}</strong></div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">رقم القيد:</span><strong>${esc(foundPlayer.registrationNo||'-')}</strong></div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">رقم العضوية:</span><strong>${esc(foundPlayer.membershipNumber||foundPlayer.memberId||'غير موجود')}</strong></div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">رقم الإيصال:</span><strong>${esc(foundPlayer.receiptNo||'-')}</strong></div><div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">أرشيف الإيصال:</span>${foundPlayer.receiptImage?`<a href="${esc(foundPlayer.receiptImage)}" target="_blank" class="text-amber-300 font-bold text-sm">فتح المرفق</a>`:'<span class="text-slate-500 text-sm">لا يوجد مرفق</span>'}</div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">الاتحاد:</span><strong>${esc(foundPlayer.federation||'غير مرتبط')}</strong></div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">السن:</span><strong>${esc(foundPlayer.age||0)} سنة</strong></div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">الاشتراك:</span><strong class="${foundPlayer.isPaid?'text-emerald-400':'text-rose-400'}">${foundPlayer.isPaid?'مسدد حتى '+esc(foundPlayer.paidThroughMonth||'الشهر الحالي'):'غير مسدد'}</strong></div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">العضوية:</span><strong>${foundPlayer.isMember?'عضو بالمركز':'غير عضو'}</strong></div>
+                <div class="col-span-1 md:col-span-2 bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">التاريخ المرضي:</span><strong>${esc(foundPlayer.medicalHistory||'لا يوجد')}</strong></div>
+                <div class="col-span-1 md:col-span-2 bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">الملاحظات:</span><strong>${esc(foundPlayer.notes||'لا توجد ملاحظات')}</strong></div>`;
+            document.getElementById('playerModal').classList.remove('hidden');
+            document.getElementById('playerModal').classList.add('flex');
+        }
+
+        // Coach Details Card View
+        function showCoachDetails(coachName, schedule) {
+            const sport = state.sports[state.activeSportIndex];
+            if (!sport) return;
+            const normalize = value => String(value ?? '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('ar-EG');
+            const targetCoach = normalize(coachName);
+            const assignedPlayers = (sport.players || []).filter(p => normalize(p.coach) === targetCoach);
+            const esc = value => String(value ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+            const coachModalContent = document.getElementById('coachModalContent');
+            document.getElementById('coachModal').dataset.currentCoach = coachName;
+            document.getElementById('coachModal').dataset.currentSport = sport.name;
+            coachModalContent.innerHTML = `
+                <div class="space-y-3 coach-details-printable">
+                    <div class="coach-report-header text-right">
+                        <h2 class="coach-report-title font-black text-emerald-400">تقرير الكابتن: ${esc(coachName)}</h2>
+                        <p class="coach-report-meta">اللعبة: ${esc(sport.name)} | مواعيد التدريب: ${esc(schedule || 'غير محدد')} | عدد اللاعبين: ${assignedPlayers.length}</p>
+                    </div>
+                    <div class="coach-print-section">
+                        ${assignedPlayers.length ? `
+                            <div class="overflow-x-auto">
+                            <table class="coach-print-table">
+                                <thead><tr>
+                                    <th>اسم اللاعب</th><th>رقم القيد</th><th>رقم العضوية</th><th>رقم الإيصال</th>
+                                    <th>السن</th><th>العضوية</th><th>الاشتراك</th><th>الاتحاد</th><th>ملاحظات</th>
+                                </tr></thead>
+                                <tbody>
+                                    ${assignedPlayers.map(player => `
+                                        <tr>
+                                            <td>${esc(player.name || '-')}</td>
+                                            <td>${esc(player.registrationNo || '-')}</td>
+                                            <td>${esc(player.membershipNumber || player.memberId || '-')}</td>
+                                            <td>${esc(player.receiptNo || '-')}</td>
+                                            <td>${esc(player.age || 0)}</td>
+                                            <td>${player.isMember ? 'عضو' : 'غير عضو'}</td>
+                                            <td>${player.isPaid ? `مسدد حتى ${esc(player.paidThroughMonth || 'الشهر الحالي')}` : 'غير مسدد'}</td>
+                                            <td>${esc(player.federation || '-')}</td>
+                                            <td>${esc(player.notes || '-')}</td>
+                                        </tr>`).join('')}
+                                </tbody>
+                            </table></div>
+                        ` : '<div class="bg-slate-800/70 p-4 rounded-2xl border border-slate-700 text-slate-300 text-sm text-center">لا يوجد لاعبين مرتبطين بهذا الكابتن حالياً.</div>'}
+                    </div>
+                </div>`;
+            document.getElementById('coachModal').classList.remove('hidden');
+            document.getElementById('coachModal').classList.add('flex');
+        }
+
+        function printCoach() {
+            document.body.classList.add('print-coach');
+            window.print();
+            setTimeout(() => document.body.classList.remove('print-coach'), 300);
+        }
+
+        function saveCoachReportAsPdf() {
+            const modal = document.getElementById('coachModal');
+            const coachName = modal.dataset.currentCoach || 'تقرير_الكابتن';
+            const sportName = modal.dataset.currentSport || 'اللعبة';
+            const content = document.getElementById('coachModalContent');
+            content.classList.add('coach-pdf-export');
+            const opt = {
+                margin: [12, 12, 12, 12],
+                filename: `${coachName.replace(/\s+/g, '_')}_${sportName.replace(/\s+/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(content).save().then(() => {
+                content.classList.remove('coach-pdf-export');
+            }).catch(() => {
+                content.classList.remove('coach-pdf-export');
+            });
+        }
+
+        // Admin Operations (Add/Delete/Import)
+        async function deletePlayer(playerId) {
+            if(!confirm("هل أنت تأكد من حذف هذا اللاعب؟")) return;
+            const sport = state.sports[state.activeSportIndex];
+            try {
+                await apiFetch(`${apiBase}/api/sports/${sport.id}/players/${playerId}`, {
+                    method: 'DELETE'
+                });
+                await loadSports(); await logAdminAction('حذف لاعب', sport.name, String(playerId));
+            } catch (error) {
+                console.error('Unable to delete player', error);
+                alert('فشل في حذف اللاعب');
+            }
+        }
+
+        function togglePlayerSelection(playerId) {
+            if (state.selectedPlayerIds.has(playerId)) {
+                state.selectedPlayerIds.delete(playerId);
+            } else {
+                state.selectedPlayerIds.add(playerId);
+            }
+            saveSelectedPlayerIds();
+            renderMainView();
+        }
+
+        function toggleSelectAll(checkbox) {
+            const sport = state.sports[state.activeSportIndex];
+            if (checkbox.checked) {
+                sport.players.forEach(p => state.selectedPlayerIds.add(p.id));
+            } else {
+                state.selectedPlayerIds.clear();
+            }
+            saveSelectedPlayerIds();
+            renderMainView();
+        }
+
+        async function assignCoachToSelected() {
+            if (state.selectedPlayerIds.size === 0) {
+                alert('اختر لاعبين أولاً');
+                return;
+            }
+            const sport = state.sports[state.activeSportIndex];
+            if (!sport.coaches.length) {
+                alert('لا يوجد كباتن مسجلين في هذه الرياضة. أضف كابتن أولاً.');
+                return;
+            }
+            const coachNames = new Set(sport.coaches.map(c => c.name));
+            const selectedPlayerIds = Array.from(state.selectedPlayerIds);
+            const keptPlayerIds = selectedPlayerIds.filter(playerId => {
+                const player = sport.players.find(p => p.id === playerId);
+                return player && !coachNames.has(player.coach);
+            });
+            const removedCount = selectedPlayerIds.length - keptPlayerIds.length;
+            if (!keptPlayerIds.length) {
+                alert('كل اللاعبين المحددين لديهم كابتن مسجل في النظام بالفعل.');
+                return;
+            }
+            if (removedCount > 0) {
+                state.selectedPlayerIds = new Set(keptPlayerIds);
+                alert(`تم استبعاد ${removedCount} لاعب${removedCount === 1 ? '' : 'ين'} لأن لديهم كابتن مسجل بالفعل في النظام.`);
+            }
+            const assignCoachList = document.getElementById('assignCoachList');
+            assignCoachList.innerHTML = sport.coaches.map((c, index) => `
+                <button onclick="assignCoachToSelectedIndex(${index})" class="w-full text-right bg-slate-800/70 hover:bg-slate-700 border border-slate-700 rounded-2xl p-4 text-slate-100 transition">
+                    <div class="flex justify-between items-center gap-4">
+                        <div>
+                            <p class="text-white font-bold">${c.name}</p>
+                            <p class="text-slate-400 text-xs">${c.schedule}</p>
+                        </div>
+                        <span class="text-xs text-emerald-400">اختر</span>
+                    </div>
+                </button>
+            `).join('');
+            document.getElementById('assignCoachModal').classList.remove('hidden');
+            document.getElementById('assignCoachModal').classList.add('flex');
+        }
+
+        async function assignCoachToSelectedIndex(selectedIndex) {
+            const sport = state.sports[state.activeSportIndex];
+            if (selectedIndex < 0 || selectedIndex >= sport.coaches.length) {
+                alert('اختيار غير صالح');
+                return;
+            }
+            const coachName = sport.coaches[selectedIndex].name;
+            sport.players = sport.players.map(player => {
+                if (state.selectedPlayerIds.has(player.id)) {
+                    return { ...player, coach: coachName };
+                }
+                return player;
+            });
+            try {
+                await apiFetch(`${apiBase}/api/sports/${sport.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ players: sport.players })
+                });
+                state.selectedPlayerIds.clear();
+                closeModal('assignCoachModal');
+                await loadSports();
+            } catch (error) {
+                console.error('Unable to assign coach to selected players', error);
+                alert('فشل في تعيين الكابتن');
+            }
+        }
+
+        async function addCoachPrompt() {
+            const name = prompt("ادخل اسم الكابتن الجديد:");
+            const schedule = prompt("ادخل مواعيد التدريب (مثال: السبت 5 مساءً):");
+            if(!name || !schedule) return;
+            const sport = state.sports[state.activeSportIndex];
+            sport.coaches.push({ name, schedule });
+            try {
+                await apiJson(`${apiBase}/api/sports/${sport.id}`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({coaches:sport.coaches})});
+                await loadSports(); showAppToast(`تمت إضافة الكابتن ${name}`);
+            } catch (error) {
+                console.error('Unable to add coach', error);
+                alert('فشل في إضافة الكابتن');
+            }
+        }
+
+        async function addPlayerPrompt() {
+            const name = prompt("اسم اللاعب:");
+            if(!name) return;
+            const regNo = prompt("رقم القيد:", "REG-" + Math.floor(1000 + Math.random() * 9000));
+            const receipt = prompt("رقم الإيصال:", "REC-" + Math.floor(1000 + Math.random() * 9000));
+            const nationalId = prompt("الرقم القومي:", "");
+            const membershipType = prompt("نوع العضوية: 1- عضويه عائليه | 2- عضويه شرفيه | 3- العضويه المؤقته (التى بها اقساط):", "1");
+            const membershipTypes = {'1':'عضويه عائليه','2':'عضويه شرفيه','3':'العضويه المؤقته (التى بها اقساط)'};
+            const selectedMembershipType = membershipTypes[String(membershipType).trim()] || 'عضويه عائليه';
+            const age = prompt("السن:", "15");
+            const coach = prompt("اسم الكابتن الخص بيه:", state.sports[state.activeSportIndex].coaches[0]?.name || "كابتن العام");
+            const memberAnswer = prompt("هل هو عضو في النادي؟ اكتب نعم أو لا:", "نعم");
+            const isMember = memberAnswer ? memberAnswer.trim().toLowerCase() === 'نعم' : true;
+            const paidThroughMonth = prompt("مسدد حتى أي شهر؟", "أغسطس 2026");
+            const federation = prompt("الاتحاد (إن وجد):", "");
+            const registrationDate = prompt("تاريخ تسجيل اللاعب (YYYY-MM-DD):", new Date().toISOString().slice(0,10));
+            const photo = prompt("رابط صورة اللاعب (اختياري):", "");
+            const fileUrl = prompt("رابط ملف اللاعب (اختياري):", "");
+            const sport = state.sports[state.activeSportIndex];
+            try {
+                await apiFetch(`${apiBase}/api/sports/${sport.id}/players`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        registrationNo: regNo,
+                        nationalId: nationalId || "",
+                        membershipType: selectedMembershipType,
+                        receiptNo: receipt,
+                        age: Number(age),
+                        medicalHistory: "سليم",
+                        isMember,
+                        isPaid: true,
+                        paidThroughMonth: paidThroughMonth || "",
+                        federation: federation || "", registrationDate: registrationDate || new Date().toISOString().slice(0,10), photo: photo || "", fileUrl: fileUrl || "",
+                        coach,
+                            notes: ""
+                    })
+                });
+                await loadSports(); await logAdminAction('إضافة لاعب', sport.name, name);
+            } catch (error) {
+                console.error('Unable to add player', error);
+                alert('فشل في إضافة اللاعب');
+            }
+        }
+
+        async function addNewSportPrompt() {
+            if(!state.isAdminLoggedIn)return;
+            const sportName=prompt('اسم الرياضة الجديدة:');
+            if(sportName===null)return;
+            const name=sportName.trim();
+            if(name.length<2)return alert('اسم الرياضة يجب أن يكون حرفين على الأقل.');
+            const tech=prompt('اسم المدير الفني (اختياري):')||'';
+            try{
+                const sport=await apiJson('/api/sports',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,technicalDirector:tech.trim(),icon:sportIcon(name)})});
+                await loadSports();
+                state.activeSportIndex=Math.max(0,state.sports.findIndex(x=>String(x.id)===String(sport.id)));
+                renderNav();renderMainView();
+                showAppToast(`تمت إضافة ${name} بنجاح`);
+            }catch(error){console.error(error);alert(error.message||'فشل في إضافة الرياضة');}
+        }
+
+        async function deleteCurrentSport() {
+            if(!confirm("هل تريد بالتأكيد حذف هذه اللعبه بالكامل؟")) return;
+            const sport = state.sports[state.activeSportIndex];
+            try {
+                await apiFetch(`${apiBase}/api/sports/${sport.id}`, {
+                    method: 'DELETE'
+                });
+                await loadSports(); await logAdminAction('حذف رياضة', sport.name, sport.name);
+            } catch (error) {
+                console.error('Unable to delete sport', error);
+                alert('فشل في حذف الرياضة');
+            }
+        }
+
+        // Excel Data Import Functionality
+        function prepareImportUpload() {
+            document.getElementById('importFileInput').value = '';
+            state.importFile = null;
+            state.importDestinationSportId = null;
+            state.importDestinationCoachName = '';
+            document.getElementById('importFileInput').click();
+        }
+
+        function importExcel(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            state.importFile = file;
+            showImportSelectionModal();
+        }
+
+        function showImportSelectionModal() {
+            const sportSelect = document.getElementById('importSportSelect');
+            const coachSelect = document.getElementById('importCoachSelect');
+            const fileName = document.getElementById('importFileName');
+
+            sportSelect.innerHTML = `<option value="">اختر الرياضة</option>` + state.sports.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            coachSelect.innerHTML = '<option value="">اختر الرياضة أولاً</option>';
+            fileName.textContent = state.importFile ? `الملف: ${state.importFile.name}` : 'الملف: لم يتم اختيار ملف';
+            document.getElementById('importSelectionModal').classList.remove('hidden');
+            document.getElementById('importSelectionModal').classList.add('flex');
+        }
+
+        function updateImportCoachList() {
+            const sportId = document.getElementById('importSportSelect').value;
+            const coachSelect = document.getElementById('importCoachSelect');
+            if (!sportId) {
+                coachSelect.innerHTML = '<option value="">اختر الرياضة أولاً</option>';
+                return;
+            }
+            const sport = state.sports.find(s => s.id == sportId);
+            if (!sport) {
+                coachSelect.innerHTML = '<option value="">الرياضة غير موجودة</option>';
+                return;
+            }
+            const options = sport.coaches.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            coachSelect.innerHTML = `<option value="">اختر الكابتن</option>${options}<option value="__add_new_coach__">+ إضافة كابتن جديد</option>`;
+        }
+
+        async function confirmImportSelection() {
+            const sportId = document.getElementById('importSportSelect').value;
+            if (!sportId) {
+                alert('اختر الرياضة أولاً');
+                return;
+            }
+            const sport = state.sports.find(s => s.id == sportId);
+            if (!sport) {
+                alert('الرياضة غير موجودة');
+                return;
+            }
+            let coachName = document.getElementById('importCoachSelect').value;
+            if (!coachName) {
+                alert('اختر الكابتن أولاً');
+                return;
+            }
+            if (coachName === '__add_new_coach__') {
+                coachName = prompt('ادخل اسم الكابتن الجديد:');
+                if (!coachName) return;
+                sport.coaches.push({ name: coachName, schedule: 'غير محدد' });
+                try {
+                    await apiFetch(`${apiBase}/api/sports/${sport.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ coaches: sport.coaches })
+                    });
+                    await loadSports();
+                } catch (error) {
+                    console.error('Unable to add coach for import', error);
+                    alert('فشل في إضافة الكابتن');
+                    return;
+                }
+            }
+            state.importDestinationSportId = sport.id;
+            state.importDestinationCoachName = coachName;
+            closeImportSelectionModal();
+            processImportFile();
+        }
+
+        function cancelImportSelection() {
+            state.importFile = null;
+            state.importDestinationSportId = null;
+            state.importDestinationCoachName = '';
+            document.getElementById('importFileInput').value = '';
+            closeImportSelectionModal();
+        }
+
+        function closeImportSelectionModal() {
+            const modal = document.getElementById('importSelectionModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function processImportFile() {
+            if (!state.importFile || !state.importDestinationSportId || !state.importDestinationCoachName) return;
+            const file = state.importFile;
+            const reader = new FileReader();
+            reader.onload = async function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+
+                const sport = state.sports.find(s => s.id === state.importDestinationSportId);
+                if (!sport) {
+                    alert('الرياضة المحددة غير موجودة بعد. حاول مرة أخرى.');
+                    return;
+                }
+                const players = json.map(row => ({
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    ...row,
+                    name: row["اسم اللاعب"] ?? row["Name"] ?? row["الاسم"] ?? row.name ?? "لاعب جديد",
+                    registrationNo: row["رقم القيد"] ?? row["Registration No"] ?? row.registrationNo ?? row["رقم قيد"] ?? "N/A",
+                    receiptNo: row["رقم الايصال"] ?? row["Receipt No"] ?? row.receiptNo ?? row["رقم الإيصال"] ?? "N/A",
+                    age: Number(row["السن"] ?? row["Age"] ?? row.age ?? 0),
+                    medicalHistory: row["تاريخ مرضي"] ?? row["التاريخ المرضي"] ?? row["Medical History"] ?? row.medicalHistory ?? "سليم",
+                    isMember: row["عضو"] !== undefined ? Boolean(row["عضو"]) : (row["isMember"] !== undefined ? Boolean(row["isMember"]) : true),
+                    isPaid: row["مدفوع"] !== undefined ? Boolean(row["مدفوع"]) : (row["isPaid"] !== undefined ? Boolean(row["isPaid"]) : true),
+                    coach: state.importDestinationCoachName,
+                    notes: row["ملاحظات"] ?? row["Notes"] ?? row.notes ?? ""
+                }));
+                try {
+                    await apiFetch(`${apiBase}/api/sports/${sport.id}/players/import`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ players })
+                    });
+                    state.importFile = null;
+                    state.importDestinationSportId = null;
+                    state.importDestinationCoachName = '';
+                    document.getElementById('importFileInput').value = '';
+                    await loadSports();
+                    alert("تم استيراد البيانات من الملف بنجاح!");
+                } catch (error) {
+                    console.error('Unable to import players', error);
+                    alert('فشل في استيراد البيانات');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        let remoteImportPreview = null;
+        function openRemoteImportModal(){
+            if(!state.isAdminLoggedIn){ alert('يجب تسجيل دخول الأدمن أولاً'); return; }
+            remoteImportPreview=null;
+            document.getElementById('remoteImportStatus').textContent='اضغط «فحص المصدر» لعرض البيانات المتاحة.';
+            document.getElementById('remoteImportList').innerHTML='';
+            document.getElementById('remoteImportSyncBtn').disabled=true;
+            document.getElementById('remoteImportModal').classList.remove('hidden');
+            document.getElementById('remoteImportModal').classList.add('flex');
+            previewRemoteImport();
+        }
+        function closeRemoteImportModal(){
+            document.getElementById('remoteImportModal').classList.add('hidden');
+            document.getElementById('remoteImportModal').classList.remove('flex');
+        }
+        async function previewRemoteImport(){
+            const status=document.getElementById('remoteImportStatus'), list=document.getElementById('remoteImportList');
+            status.textContent='جارٍ الاتصال بالموقع المصدر...'; list.innerHTML='';
+            try{
+                const r=await apiFetch('/api/remote-import/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                    url:document.getElementById('remoteSourceUrl').value.trim(),
+                    username:document.getElementById('remoteSourceUser').value.trim(),
+                    password:document.getElementById('remoteSourcePass').value
+                })}); const d=await r.json();
+                if(!r.ok) throw Error(d.message||'فشل فحص المصدر');
+                remoteImportPreview=d;
+                status.innerHTML=`<div class="text-emerald-300 font-bold">تم الاتصال بنجاح</div><div class="text-xs text-slate-400 mt-1">${d.totalSports} رياضة • ${d.totalPlayers} لاعب</div>`;
+                list.innerHTML=(d.sports||[]).map((s,i)=>`<label class="flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-700 bg-slate-800/50 cursor-pointer"><span class="flex items-center gap-3"><input type="checkbox" class="remote-sport-check accent-cyan-500" data-id="${String(s.id).replace(/"/g,'&quot;')}" checked><span class="font-semibold text-white">${escapeHtml(s.name)}</span></span><span class="text-xs text-slate-400">${s.players} لاعب • ${s.coaches} كابتن</span></label>`).join('') || '<p class="text-slate-500 text-center py-5">لا توجد رياضات في المصدر.</p>';
+                document.getElementById('remoteImportSyncBtn').disabled=!(d.sports&&d.sports.length);
+            }catch(e){status.innerHTML=`<span class="text-rose-300">${escapeHtml(e.message||'تعذر الاتصال بالمصدر')}</span>`;document.getElementById('remoteImportSyncBtn').disabled=true;}
+        }
+        async function syncRemoteImport(){
+            if(!remoteImportPreview) return;
+            const ids=[...document.querySelectorAll('.remote-sport-check:checked')].map(x=>x.dataset.id);
+            if(!ids.length){alert('اختر رياضة واحدة على الأقل');return;}
+            const btn=document.getElementById('remoteImportSyncBtn'); btn.disabled=true; btn.textContent='جارٍ الاستيراد...';
+            try{
+                const r=await apiFetch('/api/remote-import/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sportIds:ids,
+                    url:document.getElementById('remoteSourceUrl').value.trim(),
+                    username:document.getElementById('remoteSourceUser').value.trim(),
+                    password:document.getElementById('remoteSourcePass').value})});
+                const d=await r.json(); if(!r.ok) throw Error(d.message||'فشل الاستيراد');
+                await loadSports();
+                alert(`تم الاستيراد بنجاح!\nرياضات جديدة: ${d.stats.sportsCreated}\nلاعبون جدد: ${d.stats.playersAdded}\nلاعبون تم تحديثهم: ${d.stats.playersUpdated}`);
+                closeRemoteImportModal();
+            }catch(e){alert(e.message||'فشل الاستيراد');}
+            finally{btn.disabled=false;btn.textContent='استيراد المحدد';}
+        }
+        function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+
+        function openUserAuthModal(mode='login'){
+            showAuthMode(mode);
+            const m=document.getElementById('userAuthModal');m.classList.remove('hidden');m.classList.add('flex');
+        }
+        function showAuthMode(mode){
+            authMode=mode;const r=mode==='register';
+            document.getElementById('authDrawerTitle').textContent=r?'إنشاء حساب جديد':'تسجيل الدخول';
+            document.getElementById('registerNameWrap').classList.toggle('hidden',!r);
+            document.getElementById('authLoginTab').className=r?'flex-1 bg-slate-800 rounded-xl py-3 font-bold':'flex-1 bg-emerald-600 rounded-xl py-3 font-bold';
+            document.getElementById('authRegisterTab').className=r?'flex-1 bg-emerald-600 rounded-xl py-3 font-bold':'flex-1 bg-slate-800 rounded-xl py-3 font-bold';
+            document.getElementById('userAuthAction').textContent=r?'إنشاء الحساب':'Sign In';
+            document.getElementById('userAuthError').classList.add('hidden');
+        }
+        async function submitUserAuth(){
+            const username=document.getElementById('userUsername').value.trim(),password=document.getElementById('userPassword').value,err=document.getElementById('userAuthError');
+            try{
+                let r;
+                if(!username||!password)throw Error('اكتب اسم المستخدم وكلمة المرور.');
+                if(authMode==='register'){
+                    const name=document.getElementById('userDisplayName').value.trim();
+                    r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,name})});
+                }else{
+                    // The main admin account uses the same Sign In screen.
+                    r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:username,pass:password})});
+                    if(!r.ok){r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});}
+                }
+                const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||'تعذر تسجيل الدخول');
+                if(authMode==='register'){alert('تم إرسال طلب الحساب إلى الأدمن. سيتم تفعيله وتحديد اللعبة لك من لوحة الأدمن.');closeModal('userAuthModal');return;}
+                authToken=d.token;localStorage.setItem('authToken',authToken);state.currentUser=d.user;state.isAdminLoggedIn=d.user.role==='admin';state.userPermissions=d.user.permissions||((d.user.sports||[d.user.sport]).filter(Boolean).map(sp=>({sport:sp,canEdit:d.user.canEdit})));
+                if(state.isAdminLoggedIn){showAdminTools();const b=document.getElementById('adminBtn');if(b)b.innerHTML='<i class="fa-solid fa-right-from-bracket text-rose-400"></i><span>خروج الأدمن</span>';await loadFederations();}
+                else{const b=document.getElementById('userBtn');if(b)b.innerHTML=`<i class="fa-solid fa-user-check text-emerald-400"></i><span>${d.user.username}</span>`;}
+                closeModal('userAuthModal');closeModal('entryChoiceModal');enterApplication();showWelcome(d.user.username);
+            }catch(e){err.textContent=e.message||'تعذر التنفيذ';err.classList.remove('hidden');}
+        }
+
+        async function openUserManagementModal(){if(!state.isAdminLoggedIn)return;const r=await apiFetch('/api/admin/users');const users=await r.json();const pending=users.filter(u=>u.role==='user'&&!u.approved);const notice=document.getElementById('pendingUsersNotice');if(notice)notice.textContent=pending.length?`طلبات جديدة تنتظر الموافقة: ${pending.length}`:'لا توجد طلبات معلقة';const el=document.getElementById('userManagementList');if(!el)return;el.innerHTML=`<div class="mb-4 flex flex-wrap items-center justify-between gap-3"><div id="pendingUsersNotice" class="text-sm font-bold text-amber-300"></div><button class="px-4 py-2 rounded-xl bg-fuchsia-600 text-xs font-bold" onclick="addAdminAccount()">+ إضافة أدمن جديد</button></div>`+(users.length?users.map(u=>{const sports=(u.sports||[u.sport]).filter(Boolean);return `<div class="bg-slate-800/70 rounded-2xl p-4 mb-3 border ${u.role==='admin'?'border-fuchsia-500/30':(!u.approved?'border-amber-500/50 bg-amber-950/10':'border-slate-700')}"><div class="flex flex-wrap justify-between gap-3"><div><b>${u.name||u.username}</b><div class="text-xs text-slate-400">@${u.username} • ${u.role==='admin'?'أدمن':(u.approved?'مستخدم':'طلب جديد')} • ${sports.length?sports.join('، '):'لم يتم تحديد لعبة بعد'} <span class="${u.online?'text-emerald-400':'text-slate-500'}">• ${u.online?'متصل الآن':'غير متصل'}</span></div></div><div class="flex gap-2 flex-wrap">${u.role==='admin'?`<span class="px-3 py-2 rounded-lg bg-fuchsia-600/20 text-fuchsia-300 text-xs font-bold">صلاحيات أدمن كاملة</span>`:`<button class="px-3 py-2 rounded-lg bg-emerald-600 text-xs font-bold" onclick="setUserPermission('${u.id}',true,true)">مشاهدة + تعديل</button><button class="px-3 py-2 rounded-lg bg-blue-600 text-xs font-bold" onclick="setUserPermission('${u.id}',true,false)">مشاهدة فقط</button><button class="px-3 py-2 rounded-lg bg-amber-600 text-xs font-bold" onclick="setUserApproval('${u.id}',${!u.approved})">${u.approved?'إيقاف الحساب':'موافقة'}</button><button class="px-3 py-2 rounded-lg bg-purple-600 text-xs font-bold" onclick='openSportPicker(${JSON.stringify(u.id)},${JSON.stringify(sports)})'>اختيار الألعاب</button>`}<button class="px-3 py-2 rounded-lg bg-fuchsia-600 text-xs font-bold" onclick="resetUserPassword('${u.id}')">تعيين باسورد</button><button class="px-3 py-2 rounded-lg bg-rose-600 text-xs font-bold" onclick="deleteUserAccount('${u.id}')">حذف</button></div></div></div>`}).join(''):'<p class="text-slate-400">لا توجد حسابات.</p>');document.getElementById('userManagementModal').classList.remove('hidden');document.getElementById('userManagementModal').classList.add('flex');}
+async function addAdminAccount(){if(!state.isAdminLoggedIn)return;const username=prompt('اسم مستخدم الأدمن الجديد:');if(!username)return;const name=prompt('اسم الأدمن:');if(!name)return;const password=prompt('كلمة مرور الأدمن:');if(!password||password.length<4)return alert('كلمة المرور يجب أن تكون 4 أحرف على الأقل.');const r=await apiFetch('/api/admin/admins',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,name,password})});const d=await r.json().catch(()=>({}));if(!r.ok)return alert(d.message||'تعذر إضافة الأدمن');alert('تم إنشاء الأدمن. كلمة المرور: '+password);openUserManagementModal();}
+async function resetUserPassword(id){if(!state.isAdminLoggedIn)return;const p=prompt('اكتب كلمة المرور الجديدة للحساب:');if(!p)return;if(p.length<4)return alert('كلمة المرور يجب أن تكون 4 أحرف على الأقل.');const r=await apiFetch('/api/admin/users/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p})});const d=await r.json().catch(()=>({}));if(!r.ok)return alert(d.message||'تعذر تغيير كلمة المرور');alert('تم تغيير كلمة المرور. كلمة المرور الجديدة هي: '+p);openUserManagementModal();}
+        async function setUserPermission(id,approved,canEdit){await apiFetch('/api/admin/users/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({approved,canEdit})});openUserManagementModal();}
+        async function openSportPicker(id,current=[]){
+ const selected=new Set((current||[]).map(String));
+ const old=document.getElementById('sportPickerModal');if(old)old.remove();
+ const box=document.createElement('div');box.id='sportPickerModal';box.className='fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4';
+ box.innerHTML=`<div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xl p-6">
+ <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-black text-white">اختيار الألعاب للحساب</h3><button onclick="document.getElementById('sportPickerModal').remove()">✕</button></div>
+ <p class="text-xs text-slate-400 mb-4">يمكن اختيار لعبة واحدة أو أكثر. الحساب سيستطيع الإضافة والتعديل فقط في الألعاب التي منحتها له.</p>
+ <div class="grid sm:grid-cols-2 gap-2 max-h-[55vh] overflow-auto">${state.sports.map(s=>`<label class="flex items-center gap-3 bg-slate-800/70 rounded-xl p-3 cursor-pointer"><input class="sport-picker-check" type="checkbox" value="${escapeHtml(s.name)}" ${selected.has(String(s.name))?'checked':''}><span>${escapeHtml(s.name)}</span></label>`).join('')||'<p class="text-slate-500">لا توجد رياضات مسجلة.</p>'}</div>
+ <div class="mt-5 flex gap-2 justify-end"><button onclick="document.getElementById('sportPickerModal').remove()" class="px-4 py-2 rounded-xl bg-slate-700">إلغاء</button><button onclick="saveSportPicker('${id}')" class="px-4 py-2 rounded-xl bg-purple-600 font-bold">حفظ الاختيار</button></div>
+ </div>`;
+ document.body.appendChild(box);
+}
+async function saveSportPicker(id){
+ const sports=[...document.querySelectorAll('#sportPickerModal .sport-picker-check:checked')].map(x=>x.value);
+ const r=await apiFetch('/api/admin/users/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({sports})});
+ const d=await r.json().catch(()=>({}));if(!r.ok)return alert(d.message||'تعذر حفظ الألعاب');
+ document.getElementById('sportPickerModal')?.remove();await openUserManagementModal();
+}
+function changeUserSports(id,current){openSportPicker(id,String(current||'').split(/[,،]/).map(x=>x.trim()).filter(Boolean));}
+async function setUserApproval(id,approved){await apiFetch('/api/admin/users/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({approved})});openUserManagementModal();}
+        async function deleteUserAccount(id){if(!confirm('حذف الحساب نهائياً؟'))return;await apiFetch('/api/admin/users/'+id,{method:'DELETE'});openUserManagementModal();}
+        async function openOnlineModal(){const r=await apiFetch('/api/admin/online');const a=await r.json();document.getElementById('onlineList').innerHTML=a.length?a.map(u=>`<div class="flex items-center justify-between p-3 bg-slate-800 rounded-xl mb-2"><span>${u.name||u.username}</span><span class="text-emerald-400 text-sm">متصل • ${u.sport||'الأدمن'}</span></div>`).join(''):'<p class="text-slate-400">لا يوجد مستخدمون متصلون.</p>';document.getElementById('onlineModal').classList.remove('hidden');document.getElementById('onlineModal').classList.add('flex');}
+        async function heartbeat(){if(authToken){try{const r=await apiFetch('/api/auth/heartbeat',{method:'POST'});if(r.ok){const d=await r.json();state.currentUser=d.user;state.isAdminLoggedIn=d.user?.role==='admin';state.userPermissions=d.user.permissions||((d.user.sports||[d.user.sport]).filter(Boolean).map(sp=>({sport:sp,canEdit:d.user.canEdit})));const b=document.getElementById('userBtn');if(b)b.innerHTML=`<i class="fa-solid fa-right-from-bracket text-rose-400"></i><span>${d.user.username} • ${(d.user.sports||[d.user.sport]).filter(Boolean).join('، ')}</span>`;}}catch(e){}}}
+        setInterval(heartbeat,30000);
+
+        function showMainPage(){document.getElementById('federationsPage')?.classList.add('hidden');document.getElementById('federationDetailPage')?.classList.add('hidden');document.getElementById('appContent')?.classList.remove('hidden');renderMainView();}
+        function showFederationsPage(){if(!state.isAdminLoggedIn){alert('صفحة الاتحادات متاحة للأدمن فقط.');return;}document.getElementById('appContent')?.classList.add('hidden');document.getElementById('federationsPage')?.classList.remove('hidden');document.getElementById('federationDetailPage')?.classList.add('hidden');loadFederations().then(renderFederationsPage);}
+        function openFederationDetail(id){const f=(state.federations||[]).find(x=>String(x.id)===String(id));if(!f)return;document.getElementById('appContent')?.classList.add('hidden');document.getElementById('federationsPage')?.classList.add('hidden');const page=document.getElementById('federationDetailPage');page.classList.remove('hidden');document.getElementById('federationDetailTitle').textContent=f.name;document.getElementById('federationDetailMeta').textContent=`اللعبة: ${f.sport||'غير محددة'}`;renderFederationDetail(f);}
+        async function addFederationFromPage(){const name=document.getElementById('pageFederationName').value.trim(),sport=document.getElementById('pageFederationSport').value.trim();if(!name)return alert('اكتب اسم الاتحاد');const r=await apiFetch('/api/federations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,sport})});if(!r.ok)return alert('تعذر إضافة الاتحاد');document.getElementById('pageFederationName').value='';document.getElementById('pageFederationSport').value='';await loadFederations();renderFederationsPage();}
+        async function addManualPlayerToFederation(id){const f=(state.federations||[]).find(x=>String(x.id)===String(id));if(!f)return;const sport=(state.sports||[]).find(s=>String(s.name||'')===String(f.sport||''));if(!sport)return alert('لعبة الاتحاد غير موجودة محلياً. أضف اللعبة أولاً.');const name=prompt('اسم اللاعب:');if(!name)return;const reg=prompt('رقم القيد:','N/A')||'N/A';const member=prompt('رقم العضوية:','')||'';const r=await apiFetch(`/api/sports/${sport.id}/players`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,registrationNo:reg,membershipNumber:member,federation:f.name,federationId:f.id})});const d=await r.json().catch(()=>({}));if(!r.ok)return alert(d.message||'تعذر إضافة اللاعب');await apiFetch(`/api/federations/${f.id}/players`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerIds:[d.id]})});await loadSports();await loadFederations();renderFederationDetail(state.federations.find(x=>String(x.id)===String(f.id))||f);}
+        async function syncFederationRemote(id){const f=(state.federations||[]).find(x=>String(x.id)===String(id));if(!f)return;const url=prompt('رابط موقع الاتحاد:',f.remoteUrl||'');if(!url)return;const username=prompt('اسم حساب الاتحاد:',f.remoteUsername||'');if(!username)return;const password=prompt('كلمة مرور حساب الاتحاد (لن يتم عرضها لاحقاً):','');if(!password)return;const r=await apiFetch(`/api/federations/${f.id}/remote-sync`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,username,password})});const d=await r.json().catch(()=>({}));if(!r.ok)return alert(d.message||'فشل المزامنة');await loadSports();await loadFederations();const fresh=state.federations.find(x=>String(x.id)===String(id));renderFederationDetail(fresh);alert(`تمت المزامنة: ${d.stats.added} لاعب جديد، ${d.stats.updated} لاعب محدث.`);}
+        function renderFederationDetail(f){const el=document.getElementById('federationDetailContent');if(!el)return;const players=allPlayersForExport().filter(p=>p.federationId===f.id||p.federation===f.name);el.innerHTML=`<div class="flex flex-wrap gap-2 mb-5">${state.isAdminLoggedIn?`<button onclick="addManualPlayerToFederation('${String(f.id).replace(/'/g,"\\'")}')" class="bg-emerald-600 px-4 py-2.5 rounded-xl font-bold">+ إضافة لاعب يدوي</button><button onclick="syncFederationRemote('${String(f.id).replace(/'/g,"\\'")}')" class="bg-cyan-600 px-4 py-2.5 rounded-xl font-bold">مزامنة من موقع الاتحاد</button>`:''}</div><div class="grid gap-3">${players.length?players.map(p=>`<div class="glass-card rounded-2xl p-4 flex items-center gap-4"><img src="${escapeHtml(p.photo||'icon.svg')}" onerror="this.src='icon.svg'" class="w-14 h-14 rounded-xl object-cover"><div class="flex-1"><b class="text-white">${escapeHtml(p.name||'-')}</b><div class="text-xs text-slate-400 mt-1">رقم القيد: ${escapeHtml(p.registrationNo||'-')} • العضوية: ${escapeHtml(p.membershipNumber||'-')} • اللعبة: ${escapeHtml(p.sport||f.sport||'-')}</div></div>${p.fileUrl?`<a href="${escapeHtml(p.fileUrl)}" target="_blank" class="px-3 py-2 rounded-xl bg-purple-600/20 text-purple-300 text-xs font-bold">الملف</a>`:''}</div>`).join(''):'<p class="text-slate-500 py-10 text-center">لا يوجد لاعبون في الاتحاد حتى الآن.</p>'}</div>`;}
+
+        async function loadFederations(){
+            if(!state.isAdminLoggedIn){state.federations=[];return []}
+            try{
+                const r=await apiFetch('/api/federations');
+                const data=await r.json().catch(()=>[]);
+                if(!r.ok) throw new Error(data.message||'تعذر تحميل الاتحادات');
+                state.federations=Array.isArray(data)?data:[];
+                renderFederationList();
+                return state.federations;
+            }catch(e){
+                console.error('loadFederations',e); state.federations=[]; return [];
+            }
+        }
+        function renderFederationList(){
+            const el=document.getElementById('federationList'); if(!el)return;
+            el.innerHTML=(state.federations||[]).map(f=>`<div class="bg-slate-800/70 rounded-2xl p-4 mb-2 flex flex-wrap items-center gap-2"><div class="flex-1"><b>${escapeHtml(f.name)}</b><span class="text-xs text-slate-400 mr-2">${escapeHtml(f.sport||'')}</span></div><button onclick="openFederationDetail('${String(f.id).replace(/'/g,"\\'")}')" class="px-3 py-2 rounded-lg bg-purple-600/20 text-purple-300 text-xs font-bold">فتح</button><button onclick="deleteFederation('${String(f.id).replace(/'/g,"\\'")}')" class="px-3 py-2 rounded-lg bg-rose-600/20 text-rose-300 text-xs font-bold">حذف</button></div>`).join('')||'<p class="text-slate-500 text-center py-5">لا توجد اتحادات.</p>';
+        }
+        async function addFederation(){
+            if(!state.isAdminLoggedIn)return;
+            const name=document.getElementById('federationName')?.value.trim(), sport=document.getElementById('federationSport')?.value.trim();
+            if(!name)return alert('اكتب اسم الاتحاد');
+            if(!sport)return alert('اكتب اللعبة');
+            try{
+                const r=await apiFetch('/api/federations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,sport})});
+                const d=await r.json().catch(()=>({})); if(!r.ok)throw Error(d.message||'تعذر إضافة الاتحاد');
+                document.getElementById('federationName').value=''; document.getElementById('federationSport').value='';
+                await loadFederations(); renderFederationList(); showAppToast('تمت إضافة الاتحاد بنجاح');
+            }catch(e){alert(e.message||'تعذر إضافة الاتحاد')}
+        }
+        async function deleteFederation(id){
+            if(!state.isAdminLoggedIn)return;
+            if(!confirm('هل تريد حذف هذا الاتحاد؟ سيتم إزالة ربطه من اللاعبين.'))return;
+            try{
+                const r=await apiFetch('/api/federations/'+encodeURIComponent(id),{method:'DELETE'}); if(!r.ok)throw Error('تعذر حذف الاتحاد');
+                await loadSports(); await loadFederations(); renderFederationList(); renderFederationsPage(); showAppToast('تم حذف الاتحاد');
+            }catch(e){alert(e.message||'تعذر حذف الاتحاد')}
+        }
+        function renderFederationPlayerPicker(){
+            const el=document.getElementById('federationPlayerPicker'); if(!el)return;
+            const q=(document.getElementById('federationPlayerSearch')?.value||'').trim().toLowerCase();
+            const f=(state.federations||[]).find(x=>String(x.id)===String(window.__federationAssignId)); if(!f)return;
+            const players=allPlayersForExport().filter(p=>(!f.sport||p.sport===f.sport) && (!q||String(p.name||'').toLowerCase().includes(q)||String(p.registrationNo||'').toLowerCase().includes(q)));
+            const selected=new Set(window.__federationAssignedIds||[]);
+            el.innerHTML=players.map(p=>`<label class="flex items-center gap-3 bg-slate-900/70 border border-slate-800 rounded-xl p-3 cursor-pointer"><input type="checkbox" class="federation-player-check" value="${p.id}" ${selected.has(String(p.id))?'checked':''}><img src="${escapeHtml(p.photo||'icon.svg')}" class="w-9 h-9 rounded-lg object-cover"><span class="flex-1"><b>${escapeHtml(p.name)}</b><small class="block text-xs text-slate-500">${escapeHtml(p.registrationNo||'-')} • ${escapeHtml(p.sport||'-')}</small></span></label>`).join('')||'<p class="text-slate-500 text-center py-6">لا يوجد لاعبون مطابقون.</p>';
+        }
+        async function openFederationPlayerLinks(id){
+            if(!state.isAdminLoggedIn)return;
+            const f=(state.federations||[]).find(x=>String(x.id)===String(id)); if(!f)return;
+            window.__federationAssignId=String(id);
+            window.__federationAssignedIds=allPlayersForExport().filter(p=>String(p.federationId)===String(id)||p.federation===f.name).map(p=>String(p.id));
+            document.getElementById('federationAssignTitle').textContent=`${f.name} — ${f.sport||'كل الألعاب'}`;
+            document.getElementById('federationPlayerSearch').value='';
+            renderFederationPlayerPicker(); const m=document.getElementById('federationPlayersModal');m.classList.remove('hidden');m.classList.add('flex');
+        }
+        async function saveFederationPlayerLinks(){
+            if(!state.isAdminLoggedIn)return;
+            const id=window.__federationAssignId; if(!id)return;
+            const ids=[...document.querySelectorAll('.federation-player-check:checked')].map(x=>Number(x.value));
+            try{
+                const r=await apiFetch('/api/federations/'+encodeURIComponent(id)+'/players',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({playerIds:ids})});
+                const d=await r.json().catch(()=>({})); if(!r.ok)throw Error(d.message||'تعذر حفظ الربط');
+                await loadSports(); await loadFederations(); renderFederationList(); renderFederationsPage(); closeModal('federationPlayersModal'); showAppToast(`تم ربط ${d.updated||0} لاعب بالاتحاد`);
+            }catch(e){alert(e.message||'تعذر حفظ الربط')}
+        }
+        async function openActivityModal(){
+            if(!state.isAdminLoggedIn)return;
+            const el=document.getElementById('activityList'); if(!el)return;
+            el.innerHTML='<p class="text-slate-500 text-center py-8">جاري تحميل السجل...</p>';
+            const m=document.getElementById('activityModal');m.classList.remove('hidden');m.classList.add('flex');
+            try{
+                const r=await apiFetch('/api/admin/activity'); const rows=await r.json(); if(!r.ok)throw Error(rows.message||'تعذر تحميل السجل');
+                state.activityLog=Array.isArray(rows)?rows:[];
+                el.innerHTML=state.activityLog.slice().reverse().map(a=>`<div class="border-b border-slate-800 py-3"><div class="font-bold text-white">${escapeHtml(a.action||'نشاط')}</div><div class="text-xs text-slate-400 mt-1">${escapeHtml(a.name||a.username||'-')} • ${escapeHtml(a.sport||'')} • ${escapeHtml(a.details||'')} • ${escapeHtml(a.timestamp||'')}</div></div>`).join('')||'<p class="text-slate-500 text-center py-8">لا يوجد نشاط مسجل.</p>';
+            }catch(e){el.innerHTML=`<p class="text-rose-400 text-center py-8">${escapeHtml(e.message||'تعذر تحميل السجل')}</p>`}
+        }
+
+        function renderFederationsPage(){const el=document.getElementById('federationsPageList');if(!el)return;const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));el.innerHTML=(state.federations||[]).map(f=>{const players=allPlayersForExport().filter(p=>p.federation===f.name||p.federationId===f.id);return `<div onclick="openFederationDetail('${String(f.id).replace(/'/g,"\'")}')" class="glass-card float-in rounded-3xl p-5 border border-purple-500/10 col-span-full cursor-pointer hover:border-purple-400/40 transition"><div class="flex items-center gap-3 mb-4"><div class="sport-logo"><i class="fa-solid fa-people-group"></i></div><div><h3 class="font-black text-xl text-white">${esc(f.name)}</h3><p class="text-slate-400 text-sm">اللعبة: ${esc(f.sport||'غير محددة')} • ${players.length} لاعب</p></div></div><div class="space-y-2">${players.length?players.map(p=>`<div class="flex items-center gap-3 bg-slate-900/60 rounded-2xl p-3"><img src="${esc(p.photo||'icon.svg')}" class="w-12 h-12 rounded-xl object-cover border border-slate-700" onerror="this.src='icon.svg'"><div class="min-w-0 flex-1"><b class="text-white">${esc(p.name)}</b><div class="text-xs text-slate-400">رقم القيد: ${esc(p.registrationNo)} • المدرب: ${esc(p.coach)}</div></div>${p.fileUrl?`<a href="${esc(p.fileUrl)}" target="_blank" class="px-3 py-2 rounded-xl bg-purple-600/20 text-purple-300 text-xs font-bold"><i class="fa-solid fa-file"></i> ملف</a>`:'<span class="text-xs text-slate-600">لا يوجد ملف</span>'}</div>`).join(''):'<p class="text-slate-500">لا يوجد لاعبون مقيدون بهذا الاتحاد.</p>'}</div></div>`}).join('')||'<div class="col-span-full text-center text-slate-500 py-10">لا توجد اتحادات.</div>'; }
+
+        function allPlayersForExport(){return(state.sports||[]).flatMap(s=>(s.players||[]).map(p=>({...p,sport:s.name,sportId:s.id})))}
+
+        function exportAllDataToExcel(){
+          if(!state.isAdminLoggedIn)return alert('التصدير للأدمن فقط.');
+          if(typeof XLSX==='undefined')return alert('مكتبة Excel لم يتم تحميلها.');
+          const wb=XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet((state.sports||[]).map(s=>({'معرف اللعبة':s.id||'','اللعبة':s.name||'','المدير الفني':s.technicalDirector||'','رابط الاستمارة':s.formUrl||''}))),'الرياضات');
+          XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet((state.sports||[]).flatMap(s=>(s.coaches||[]).map(c=>({'معرف اللعبة':s.id||'','اللعبة':s.name||'','المدرب':c.name||'','مواعيد التدريب':c.schedule||''})))),'الكباتن');
+          XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(allPlayersForExport().map(p=>({'معرف اللاعب':p.id||'','معرف اللعبة':p.sportId||'','الاسم':p.name||'','اللعبة':p.sport||'','رقم القيد':p.registrationNo||'','رقم العضوية':p.membershipNumber||p.memberId||'','رقم الإيصال':p.receiptNo||p.receiptNumber||'','السن':p.age||'','عضو':p.isMember?'نعم':'لا','مدفوع':p.isPaid?'نعم':'لا','مسدد حتى شهر':p.paidThroughMonth||'','الاتحاد':p.federation||'','المدرب':p.coach||'','التاريخ المرضي':p.medicalHistory||'','الملاحظات':p.notes||''}))),'اللاعبين');
+          XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet((state.federations||[]).map(f=>({'معرف الاتحاد':f.id||'','الاتحاد':f.name||'','اللعبة':f.sport||''}))),'الاتحادات');
+          XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet((state.activityLog||[]).map(a=>({'المستخدم':a.name||'','البريد':a.email||'','اللعبة':a.sport||'','العملية':a.action||'','الوقت':a.timestamp?.toDate?a.timestamp.toDate().toLocaleString('ar-EG'):''}))),'سجل النشاط');
+          XLSX.writeFile(wb,`Obour_Youth_Club_Backup_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        function excelBool(v,def=false){if(typeof v==='boolean')return v;const x=String(v??'').trim().toLowerCase();if(['نعم','yes','true','1','مسدد','عضو'].includes(x))return true;if(['لا','no','false','0','غير مسدد','غير عضو'].includes(x))return false;return def}
+
+        async function importAllDataFromExcel(event){
+          if(!state.isAdminLoggedIn)return alert('الاستيراد للأدمن فقط.');
+          const file=event.target.files?.[0]; if(!file||typeof XLSX==='undefined')return;
+          if(!confirm('سيتم استيراد نسخة Excel كاملة واستبدال بيانات الرياضات واللاعبين والكباتن. هل تريد المتابعة؟')){event.target.value='';return}
+          try{
+            const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+            const rows=n=>wb.Sheets[n]?XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:''}):[];
+            const sportRows=rows('الرياضات'),coachRows=rows('الكباتن'),playerRows=rows('اللاعبين'),fedRows=rows('الاتحادات');
+            if(!sportRows.length&&!playerRows.length)throw new Error('ملف Excel لا يحتوي على بيانات الرياضات أو اللاعبين.');
+            const map=new Map();
+            sportRows.forEach((r,i)=>{const name=String(r['اللعبة']||'').trim();if(!name)return;const id=Number(r['معرف اللعبة'])||Date.now()+i;map.set(String(id),{id,name,technicalDirector:String(r['المدير الفني']||''),formUrl:String(r['رابط الاستمارة']||''),coaches:[],admins:[],players:[]})});
+            playerRows.forEach(r=>{const name=String(r['اللعبة']||'').trim();if(!name)return;if(!Array.from(map.values()).some(s=>s.name===name)){const id=Number(r['معرف اللعبة'])||Date.now()+map.size;map.set(String(id),{id,name,technicalDirector:'',formUrl:'',coaches:[],admins:[],players:[]})}});
+            const findSport=r=>{const id=String(r['معرف اللعبة']||'').trim();if(id&&map.has(id))return map.get(id);const name=String(r['اللعبة']||'').trim();return Array.from(map.values()).find(s=>s.name===name)};
+            coachRows.forEach(r=>{const s=findSport(r),name=String(r['المدرب']||'').trim();if(s&&name&&!s.coaches.some(c=>c.name===name))s.coaches.push({name,schedule:String(r['مواعيد التدريب']||'غير محدد')})});
+            playerRows.forEach((r,i)=>{const s=findSport(r),name=String(r['الاسم']||r['اسم اللاعب']||'').trim();if(!s||!name)return;const coach=String(r['المدرب']||'').trim();if(coach&&!s.coaches.some(c=>c.name===coach))s.coaches.push({name:coach,schedule:'غير محدد'});s.players.push({id:Number(r['معرف اللاعب'])||Date.now()+i,name,registrationNo:r['رقم القيد']||'N/A',membershipNumber:r['رقم العضوية']||'',receiptNo:r['رقم الإيصال']||'N/A',age:Number(r['السن']||0),medicalHistory:r['التاريخ المرضي']||'سليم',isMember:excelBool(r['عضو'],true),isPaid:excelBool(r['مدفوع'],false),paidThroughMonth:r['مسدد حتى شهر']||'',federation:r['الاتحاد']||'',coach,notes:r['الملاحظات']||''})});
+            const sports=Array.from(map.values());
+            const res=await apiFetch(`${apiBase}/api/import-all`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sports})});if(!res.ok)throw new Error('تعذر حفظ بيانات الرياضات.');
+            if(fedRows.length){for(const r of fedRows){const name=String(r['الاتحاد']||'').trim();if(!name)continue;try{await apiFetch('/api/federations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,sport:String(r['اللعبة']||'')})})}catch(_){}}}
+            await loadSports();await loadFederations();renderFederationsPage();event.target.value='';
+            alert(`تم استيراد النسخة كاملة: ${sports.length} لعبة، ${sports.reduce((n,s)=>n+(s.players||[]).length,0)} لاعب، ${sports.reduce((n,s)=>n+(s.coaches||[]).length,0)} مدرب.`);
+          }catch(err){console.error(err);event.target.value='';alert(`فشل الاستيراد: ${err.message||'خطأ غير معروف'}`)}
+        }
+
+        function membershipMonthKey(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}
+        function isPaidForCurrentMonth(p){if(!p.isPaid)return false;const raw=String(p.paidThroughMonth||'').trim();if(!raw)return false;if(/^\d{4}-\d{2}$/.test(raw))return raw===membershipMonthKey();const low=raw.toLowerCase();if(low.includes('الشهر الحالي')||low.includes('current month'))return true;const names=['يناير','فبراير','مارس','ابريل','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];return raw.includes(String(new Date().getFullYear()))&&raw.includes(names[new Date().getMonth()])}
+        function checkMembershipExpiry(){const d=new Date();if(d.getDate()<1)return;const key=membershipMonthKey();if(localStorage.getItem('membership-expiry-seen')===key)return;const players=allPlayersForExport().filter(p=>!isPaidForCurrentMonth(p)); if(players.length && 'Notification' in window && Notification.permission==='granted'){new Notification('تنبيه الاشتراكات',{body:`${players.length} لاعب يحتاجون إلى تجديد الاشتراك.`});}const el=document.getElementById('membershipExpiryList');if(!el||!players.length)return;el.innerHTML=players.map(p=>`<div class="glass-card rounded-2xl p-3 flex flex-wrap justify-between gap-2 items-center border border-amber-400/10"><span class="font-bold text-white">${p.name||'-'}</span><span class="text-sm text-amber-300">${p.sport||'-'} — ${p.paidThroughMonth||'غير مسدد للشهر الحالي'}</span></div>`).join('');document.getElementById('membershipExpiryModal').classList.remove('hidden');document.getElementById('membershipExpiryModal').classList.add('flex');localStorage.setItem('membership-expiry-seen',key)}
+
+        function handleAdminPasswordKeydown(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (typeof adminLogin === 'function') adminLogin();
+                else if (typeof loginAdmin === 'function') loginAdmin();
+            }
+        }
+
+        // Search Function
+        function handleSearch() {
+            state.playerSearchQuery = document.getElementById('globalSearch').value.toLowerCase().trim();
+            state.playerPageIndex = 0;
+            renderMainView();
+        }
+    </script>
+
+<div id="mobileInstallPrompt" role="button" tabindex="0" aria-label="تثبيت التطبيق على الهاتف">
+  <div class="install-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+  <div class="install-copy">
+    <strong>نزّل التطبيق على تليفونك</strong>
+    <span>اضغط هنا لتثبيت الموقع كتطبيق على الهاتف</span>
+  </div>
+  <button class="install-close" type="button" aria-label="إغلاق" onclick="event.stopPropagation();hideMobileInstallPrompt()"><i class="fa-solid fa-xmark"></i></button>
+</div>
+</body>
+
+<script>
+(function(){
+  let deferredInstallPrompt=null;
+  let installTimer=null;
+  const promptEl=()=>document.getElementById('mobileInstallPrompt');
+  const isMobile=()=>/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||window.matchMedia('(max-width: 768px)').matches;
+  const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+  window.hideMobileInstallPrompt=function(){
+    const el=promptEl(); if(el) el.classList.remove('show');
+    if(installTimer){clearTimeout(installTimer);installTimer=null;}
+  };
+  function showMobileInstallPrompt(){
+    if(!isMobile()||isStandalone()) return;
+    const el=promptEl(); if(!el)return;
+    el.classList.add('show');
+    if(installTimer)clearTimeout(installTimer);
+    installTimer=setTimeout(window.hideMobileInstallPrompt,15000);
+  }
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault(); deferredInstallPrompt=e; showMobileInstallPrompt();
+  });
+  window.addEventListener('appinstalled',function(){deferredInstallPrompt=null;window.hideMobileInstallPrompt();});
+  document.addEventListener('DOMContentLoaded',function(){
+    const el=promptEl(); if(!el)return;
+    el.addEventListener('click',async function(){
+      if(deferredInstallPrompt){
+        const p=deferredInstallPrompt; deferredInstallPrompt=null;
+        try{await p.prompt(); await p.userChoice;}catch(err){console.debug(err);}
+        window.hideMobileInstallPrompt();
+        return;
+      }
+      // iPhone/iPad and browsers without a programmatic install prompt:
+      // keep the message actionable and let the user use Add to Home Screen.
+      if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
+        el.querySelector('.install-copy span').textContent='اضغط مشاركة ثم «إضافة إلى الشاشة الرئيسية» لتثبيت التطبيق';
+        if(installTimer)clearTimeout(installTimer);
+        installTimer=setTimeout(window.hideMobileInstallPrompt,15000);
+      }
+    });
+    el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}});
+    setTimeout(showMobileInstallPrompt,1200);
+  });
+})();
+</script>
+</html><script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', async ()=>{
+    try{
+      const reg=await navigator.serviceWorker.register('/sw.js',{scope:'/'});
+      if(reg.waiting) window.dispatchEvent(new Event('pwa-update-available'));
+      reg.addEventListener('updatefound',()=>{
+        const worker=reg.installing;
+        if(!worker)return;
+        worker.addEventListener('statechange',()=>{
+          if(worker.state==='installed' && navigator.serviceWorker.controller){
+            window.dispatchEvent(new Event('pwa-update-available'));
+          }
+        });
+      });
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(window.__pwaReloading)return;
+        window.__pwaReloading=true;
+        window.location.reload();
+      });
+    }catch(err){console.warn('PWA registration failed:',err);}
+  });
+}
+
+(function(){
+  function toastPwa(message, actionText, action){
+    const old=document.getElementById('pwaStatusToast'); if(old) old.remove();
+    const el=document.createElement('div'); el.id='pwaStatusToast';
+    el.style.cssText='position:fixed;left:14px;right:14px;bottom:18px;z-index:100000;display:flex;align-items:center;gap:12px;padding:13px 15px;border:1px solid rgba(148,163,184,.18);border-radius:18px;background:rgba(7,11,20,.96);backdrop-filter:blur(18px);box-shadow:0 18px 55px rgba(0,0,0,.4);color:#e5e7eb;font-family:Cairo,Arial,sans-serif';
+    el.innerHTML='<span style="flex:1;font-size:13px;line-height:1.7">'+message+'</span>'+(actionText?'<button id="pwaToastAction" style="border:0;border-radius:11px;padding:9px 13px;background:#10b981;color:#032016;font-weight:800;cursor:pointer">'+actionText+'</button>':'');
+    document.body.appendChild(el); if(action) document.getElementById('pwaToastAction').onclick=()=>{action();el.remove();};
+    if(!action) setTimeout(()=>el.remove(),5000);
+  }
+  window.addEventListener('pwa-update-available',()=>{
+    if(navigator.serviceWorker?.controller){
+      toastPwa('يتوفر إصدار جديد من التطبيق. حدّث الآن للحصول على آخر التحسينات.','تحديث',()=>navigator.serviceWorker.getRegistration().then(r=>r?.waiting?.postMessage({type:'SKIP_WAITING'})));
+    }
+  });
+  window.addEventListener('online',()=>toastPwa('تم استعادة الاتصال بالإنترنت.','',null));
+  window.addEventListener('offline',()=>toastPwa('أنت الآن بدون اتصال. الواجهة الأساسية ستظل متاحة، لكن البيانات تحتاج اتصالاً بالخادم.','',null));
+})();
+
+window.addEventListener('unhandledrejection',e=>{console.error(e.reason);showAppToast(e.reason?.message||'حدث خطأ غير متوقع. حاول مرة أخرى.','error');});
+window.addEventListener('error',e=>{if(e?.message)console.error('UI error:',e.message);});
+
+        async function uploadPlayerPhoto(sportId,playerId,file){
+ if(!file)return;
+ if(file.size>5*1024*1024)return alert('حجم الصورة يجب ألا يتجاوز 5MB.');
+ const reader=new FileReader();reader.onload=async()=>{try{
+  const r=await apiFetch(`/api/sports/${sportId}/players/${playerId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({photo:reader.result})});
+  const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||'تعذر حفظ الصورة');
+  await loadSports();closeModal('playerModal');showAppToast('تم حفظ صورة اللاعب');
+ }catch(e){alert(e.message||'فشل رفع الصورة');}};
+ reader.readAsDataURL(file);
+}
+async function uploadPlayerReceipt(sportId,playerId,file){
+ if(!file)return;
+ if(file.size>7*1024*1024)return alert('حجم الإيصال يجب ألا يتجاوز 7MB.');
+ const reader=new FileReader();reader.onload=async()=>{try{
+  const r=await apiFetch(`/api/sports/${sportId}/players/${playerId}/receipt`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({receiptImage:reader.result,receiptDate:new Date().toISOString().slice(0,10)})});
+  const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||'تعذر حفظ الإيصال');
+  await loadSports();closeModal('playerModal');showAppToast('تم أرشفة الإيصال وربطه باللاعب');
+ }catch(e){alert(e.message||'فشل رفع الإيصال');}};
+ reader.readAsDataURL(file);
+}
+async function downloadBackup(){
+            if(!state.isAdminLoggedIn)return alert('النسخ الاحتياطي للأدمن فقط.');
+            try{
+                const r=await apiFetch('/api/admin/backup');
+                if(!r.ok)throw Error('تعذر إنشاء النسخة الاحتياطية');
+                const blob=await r.blob(), a=document.createElement('a');
+                a.href=URL.createObjectURL(blob);a.download=`obour-youth-club-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);
+                showAppToast('تم تنزيل نسخة db.json كاملة بنجاح');
+            }catch(e){alert(e.message||'فشل النسخ الاحتياطي');}
+        }
+        async function requestSmartNotifications(){
+            if(!('Notification' in window))return alert('المتصفح لا يدعم إشعارات النظام.');
+            const p=await Notification.requestPermission();
+            if(p==='granted'){new Notification('مركز شباب العبور',{body:'تم تفعيل التنبيهات الذكية للاشتراكات والحضور.'});showAppToast('تم تفعيل الإشعارات');}
+        }
+        function openReportsModal(){
+            const modal=document.getElementById('reportsModal');if(!modal)return;
+            modal.classList.remove('hidden');modal.classList.add('flex');
+            const d=new Date(), local=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+            document.getElementById('attendanceDate').value=local;
+            populateAttendance();
+            loadArchive();
+        }
+        async function populateAttendance(){
+            const sport=state.sports[state.activeSportIndex];if(!sport)return;
+            const date=document.getElementById('attendanceDate')?.value;if(!date)return;
+            const canEdit=canEditSport(sport);
+            let existing=[];try{const r=await apiFetch(`/api/attendance?sportId=${sport.id}&date=${encodeURIComponent(date)}`);existing=await r.json();}catch(_){}
+            const map=new Map(existing.map(x=>[Number(x.playerId),x.status]));
+            const el=document.getElementById('attendanceBody');if(!el)return;
+            el.innerHTML=(sport.players||[]).map(p=>{
+                const status=map.get(Number(p.id))||'absent';
+                return `<tr class="border-b border-slate-800"><td class="p-2 font-bold">${escapeHtml(p.name)}</td>
+                <td class="p-2"><select data-player="${p.id}" class="attendance-status bg-slate-900 border border-slate-700 rounded-lg p-2 w-full" ${canEdit?'':'disabled'}>
+                <option value="present" ${status==='present'?'selected':''}>حاضر</option><option value="absent" ${status==='absent'?'selected':''}>غائب</option><option value="excused" ${status==='excused'?'selected':''}>إجازة / بعذر</option></select></td></tr>`;
+            }).join('')||'<tr><td colspan="2" class="p-5 text-center text-slate-500">لا يوجد لاعبين</td></tr>';
+        }
+        async function saveAttendance(){
+            const sport=state.sports[state.activeSportIndex];if(!sport||!canEditSport(sport))return alert('لا تملك صلاحية تعديل الحضور.');
+            const date=document.getElementById('attendanceDate').value;
+            const records=[...document.querySelectorAll('.attendance-status')].map(x=>({playerId:Number(x.dataset.player),status:x.value}));
+            const r=await apiFetch('/api/attendance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sportId:sport.id,date,records})});
+            const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||'فشل حفظ الحضور');showAppToast('تم حفظ حضور وغياب اللاعبين لهذا اليوم');
+        }
+        async function loadArchive(){
+            const el=document.getElementById('archiveBody');if(!el)return;
+            try{const r=await apiFetch('/api/archive');const rows=await r.json();
+                el.innerHTML=rows.length?rows.slice().reverse().map(a=>`<div class="bg-slate-900/70 border border-rose-500/10 rounded-2xl p-4 mb-2"><div class="font-black text-rose-300">${escapeHtml(a.sport)} <span class="text-xs text-slate-500">— ${escapeHtml(a.month)}</span></div><div class="text-xs text-slate-400 mt-2">${a.players.map(p=>escapeHtml(p.name)).join('، ')}</div></div>`).join(''):'<p class="text-slate-500 text-center py-6">لا يوجد أرشيف اشتراكات بعد.</p>';
+            }catch(e){el.innerHTML='<p class="text-rose-400">تعذر تحميل الأرشيف.</p>';}
+        }
+        async function exportAttendanceExcel(){
+ if(typeof XLSX==='undefined')return alert('مكتبة Excel لم يتم تحميلها.');
+ const sport=state.sports[state.activeSportIndex],date=document.getElementById('attendanceDate')?.value;if(!sport||!date)return;
+ const r=await apiFetch(`/api/attendance?sportId=${sport.id}&date=${encodeURIComponent(date)}`);const rows=await r.json();
+ const wb=XLSX.utils.book_new(),data=(rows||[]).map(x=>({'التاريخ':x.date,'اللعبة':sport.name,'اسم اللاعب':x.playerName,'الحالة':x.status==='present'?'حاضر':x.status==='excused'?'بعذر':'غائب'}));
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'الحضور');XLSX.writeFile(wb,`حضور-${sport.name}-${date}.xlsx`);
+}
+function printAttendanceReport(){
+            const modal=document.getElementById('reportsModal');document.body.classList.add('print-report');modal.classList.remove('hidden');modal.classList.add('flex');
+            window.print();setTimeout(()=>document.body.classList.remove('print-report'),400);
+        }
+</script>
