@@ -11,29 +11,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
-const DATA_DIR = process.env.DATA_DIR || (process.env.RAILWAY_ENVIRONMENT ? '/data' : path.join(os.homedir(), 'ObourYouthClubData', 'data'));
-const DATA_FILE = path.join(DATA_DIR, 'db.json');
-const BACKUP_DIR = process.env.BACKUP_DIR || path.join(os.path.dirname(DATA_FILE), 'backups');
-const LEGACY_DATA_FILE = path.join(__dirname, 'db.json');
-let dataStoreReady = null;
-async function ensureDataStore(){
-  if(!dataStoreReady){
-    dataStoreReady=(async()=>{
-      await fs.mkdir(DATA_DIR,{recursive:true});
-      await fs.mkdir(BACKUP_DIR,{recursive:true});
-      try{ await fs.access(DATA_FILE); }
-      catch(e){
-        if(e.code!=='ENOENT') throw e;
-        try{ await fs.copyFile(LEGACY_DATA_FILE, DATA_FILE); }
-        catch(err){
-          if(err.code!=='ENOENT') throw err;
-          await fs.writeFile(DATA_FILE, JSON.stringify({sports:[],users:[],federations:[],activity:[],attendance:[],archive:[],backups:[]},null,2),'utf8');
-        }
-      }
-    })().catch(err=>{dataStoreReady=null; throw err;});
-  }
-  return dataStoreReady;
-}
+const DATA_FILE = path.join(__dirname, 'db.json');
 const REMOTE_SOURCE_URL = process.env.REMOTE_SOURCE_URL || 'https://obour-youth-club-production.up.railway.app';
 const REMOTE_SOURCE_TOKEN = process.env.REMOTE_SOURCE_TOKEN || '';
 const ADMIN_USER = process.env.ADMIN_USER || 'Fasmo';
@@ -51,30 +29,22 @@ function uid(){return crypto.randomBytes(24).toString('hex');}
 function hashPassword(p,salt=crypto.randomBytes(16).toString('hex')){return {salt,hash:crypto.scryptSync(String(p),salt,64).toString('hex')};}
 function verifyPassword(p,u){try{return crypto.timingSafeEqual(Buffer.from(hashPassword(p,u.salt).hash,'hex'),Buffer.from(u.passwordHash,'hex'));}catch{return false;}}
 function safeUser(u){const {passwordHash,salt,...rest}=u;return {...rest,sports:Array.isArray(u.sports)?u.sports:(u.sport?[u.sport]:[])};}
-async function loadDatabase(){
-  await ensureDataStore();
-  try{return JSON.parse(await fs.readFile(DATA_FILE,'utf8'));}
-  catch(e){if(e instanceof SyntaxError){const broken=`${DATA_FILE}.broken-${Date.now()}.json`;await fs.copyFile(DATA_FILE,broken).catch(()=>{});const d={sports:[],users:[],federations:[],activity:[],attendance:[],archive:[],backups:[]};await writeDatabaseFile(d,false);return d;}throw e;}
-}
-async function writeDatabaseFile(data, makeBackup=true){
-  await ensureDataStore();
-  const snapshot=JSON.stringify(data,null,2);
-  const tmp=DATA_FILE+'.tmp';
-  if(makeBackup){
-    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
-    await fs.writeFile(path.join(BACKUP_DIR,`db-${stamp}.json`),snapshot,'utf8').catch(()=>{});
-  }
-  await fs.writeFile(tmp,snapshot,'utf8');
-  await fs.rename(tmp,DATA_FILE);
-  if(makeBackup){
-    try{
-      const files=(await fs.readdir(BACKUP_DIR)).filter(f=>f.endsWith('.json')).sort().reverse();
-      await Promise.all(files.slice(30).map(f=>fs.unlink(path.join(BACKUP_DIR,f)).catch(()=>{})));
-    }catch(_){}
-  }
-}
+async function loadDatabase(){try{return JSON.parse(await fs.readFile(DATA_FILE,'utf8'));}catch(e){if(e.code==='ENOENT'){const d={sports:[],users:[],federations:[],activity:[],attendance:[],archive:[],backups:[]};await saveDatabase(d);return d;}throw e;}}
 async function saveDatabase(data){
-  saveQueue=saveQueue.catch(()=>{}).then(()=>writeDatabaseFile(data,true));
+  const snapshot=JSON.stringify(data,null,2);
+  saveQueue=saveQueue.catch(()=>{}).then(async()=>{
+    const tmp=DATA_FILE+'.tmp';
+    const backupDir=path.join(__dirname,'backups');
+    await fs.mkdir(backupDir,{recursive:true}).catch(()=>{});
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    await fs.writeFile(path.join(backupDir,`db-${stamp}.json`),snapshot,'utf8').catch(()=>{});
+    await fs.writeFile(tmp,snapshot,'utf8');
+    await fs.rename(tmp,DATA_FILE);
+    try{
+      const files=(await fs.readdir(backupDir)).filter(f=>f.endsWith('.json')).sort().reverse();
+      await Promise.all(files.slice(20).map(f=>fs.unlink(path.join(backupDir,f)).catch(()=>{})));
+    }catch(_){}
+  });
   await saveQueue;
   broadcast({type:'data-changed'});
   return data;
@@ -88,7 +58,7 @@ function canEditSportForUser(u,sport){
   const perms=Array.isArray(u.permissions)?u.permissions:[];
   return perms.some(p=>(String(p.sport)===String(sport?.name)||String(p.sportId)===String(sport?.id))&&p.canEdit===true);
 }
-function addActivity(data){saveQueue=saveQueue.catch(()=>{}).then(async()=>{const db=await loadDatabase();db.activity=db.activity||[];db.activity.unshift({...data,id:Date.now()+Math.random(),at:new Date().toISOString()});db.activity=db.activity.slice(0,5000);await writeDatabaseFile(db,false);broadcast({type:'data-changed'});}).catch(()=>{});}
+function addActivity(data){saveQueue=saveQueue.then(async()=>{const db=await loadDatabase();db.activity=db.activity||[];db.activity.unshift({...data,id:Date.now()+Math.random(),at:new Date().toISOString()});db.activity=db.activity.slice(0,5000);await fs.writeFile(DATA_FILE,JSON.stringify(db,null,2));}).catch(()=>{});}
 function touch(token){const s=sessions.get(token);if(!s)return null;s.lastSeen=Date.now();online.set(s.userId,{...s,lastSeen:s.lastSeen});return s;}
 
 wss.on('connection',(socket)=>{wsClients.add(socket);socket.on('close',()=>wsClients.delete(socket));});
@@ -139,12 +109,9 @@ app.get('/api/attendance',async(req,res)=>{
   const u=auth(req); if(!u)return res.status(401).json({message:'Login required'});
   const db=await loadDatabase(); const date=String(req.query.date||'');
   const sportId=req.query.sportId?Number(req.query.sportId):null;
-  if(sportId){const sport=(db.sports||[]).find(x=>Number(x.id)===sportId);if(!sport)return res.status(404).json({message:'Sport not found'});if(!canViewSportForUser(u,sport))return res.status(403).json({message:'هذه اللعبة غير متاحة لهذا الحساب'});}
   let rows=Array.isArray(db.attendance)?db.attendance:[];
   if(date)rows=rows.filter(x=>x.date===date);
   if(sportId)rows=rows.filter(x=>Number(x.sportId)===sportId);
-  const playerId=req.query.playerId?Number(req.query.playerId):null;
-  if(playerId)rows=rows.filter(x=>Number(x.playerId)===playerId);
   res.json(rows);
 });
 app.post('/api/attendance',async(req,res)=>{
@@ -307,16 +274,16 @@ app.get('/api/sports/:id',async(req,res)=>{const db=await loadDatabase();const s
 
 app.post('/api/admin/login',(req,res)=>{const {user,pass}=req.body||{};if(user===ADMIN_USER&&pass===ADMIN_PASS){const token=uid(),u={userId:'admin',username:ADMIN_USER,name:ADMIN_USER,email:'',role:'admin',sport:'',canEdit:true,token};sessions.set(token,{...u,lastSeen:Date.now()});online.set('admin',sessions.get(token));addActivity({userId:'admin',username:ADMIN_USER,name:ADMIN_USER,action:'دخول الأدمن',sport:''});return res.json({ok:true,token,user:safeUser(sessions.get(token))});}res.status(401).json({ok:false,message:'بيانات أدمن غير صحيحة'});});
 
-app.post('/api/auth/register',async(req,res)=>{const {username,password}=req.body||{};const cleanUsername=String(username||'').trim();if(!cleanUsername||!password)return res.status(400).json({message:'اكتب اسم المستخدم وكلمة المرور فقط.'});if(cleanUsername.length<3)return res.status(400).json({message:'اسم المستخدم يجب أن يكون 3 أحرف على الأقل.'});if(String(password).length<4)return res.status(400).json({message:'كلمة المرور يجب أن تكون 4 أحرف على الأقل.'});const db=await loadDatabase();db.users=db.users||[];if(db.users.some(u=>String(u.username||'').toLowerCase()===cleanUsername.toLowerCase()))return res.status(409).json({message:'اسم المستخدم مستخدم بالفعل'});const hp=hashPassword(password);const displayName=String(req.body.name||cleanUsername).trim()||cleanUsername;const user={id:uid(),username:cleanUsername,name:displayName,email:'',sports:[],sport:'',role:'user',canEdit:false,permissions:[],approved:false,passwordHash:hp.hash,salt:hp.salt,createdAt:new Date().toISOString()};db.users.push(user);await saveDatabase(db);addActivity({userId:user.id,username:cleanUsername,name:displayName,action:'طلب حساب جديد - بانتظار موافقة الأدمن',sport:'',details:'يحتاج موافقة الأدمن وتعيين لعبة'});res.status(201).json({ok:true,pending:true,message:'تم إرسال طلب الحساب إلى الأدمن. بعد الموافقة وتعيين اللعبة يمكنك تسجيل الدخول.'});});
+app.post('/api/auth/register',async(req,res)=>{const {username,password}=req.body||{};const cleanUsername=String(username||'').trim();if(!cleanUsername||!password)return res.status(400).json({message:'اكتب اسم المستخدم وكلمة المرور فقط.'});if(cleanUsername.length<3)return res.status(400).json({message:'اسم المستخدم يجب أن يكون 3 أحرف على الأقل.'});if(String(password).length<4)return res.status(400).json({message:'كلمة المرور يجب أن تكون 4 أحرف على الأقل.'});const db=await loadDatabase();db.users=db.users||[];if(db.users.some(u=>String(u.username||'').toLowerCase()===cleanUsername.toLowerCase()))return res.status(409).json({message:'اسم المستخدم مستخدم بالفعل'});const hp=hashPassword(password);const displayName=String(req.body.name||cleanUsername).trim()||cleanUsername;const user={id:uid(),username:cleanUsername,name:displayName,email:'',sports:[],sport:'',role:'user',canEdit:false,permissions:[],approved:false,passwordHash:hp.hash,salt:hp.salt,createdAt:new Date().toISOString()};db.users.push(user);await fs.writeFile(DATA_FILE,JSON.stringify(db,null,2));addActivity({userId:user.id,username:cleanUsername,name:displayName,action:'طلب حساب جديد - بانتظار موافقة الأدمن',sport:'',details:'يحتاج موافقة الأدمن وتعيين لعبة'});res.status(201).json({ok:true,pending:true,message:'تم إرسال طلب الحساب إلى الأدمن. بعد الموافقة وتعيين اللعبة يمكنك تسجيل الدخول.'});});
 
 app.post('/api/auth/login',async(req,res)=>{const {username,password}=req.body||{};const db=await loadDatabase();const u=(db.users||[]).find(x=>x.username.toLowerCase()===String(username||'').toLowerCase());if(!u||!verifyPassword(password,u))return res.status(401).json({message:'اسم المستخدم أو كلمة المرور غير صحيحة'});if(!u.approved)return res.status(403).json({message:'الحساب مسجل وينتظر موافقة الأدمن.'});const sports=Array.isArray(u.sports)?u.sports:(u.sport?[u.sport]:[]);if(!sports.length)return res.status(403).json({message:'تمت الموافقة على الحساب، لكن الأدمن لم يحدد لك لعبة بعد.'});const permissions=Array.isArray(u.permissions)?u.permissions:sports.map(x=>({sport:x,canEdit:!!u.canEdit}));const token=uid(),session={userId:u.id,username:u.username,name:u.name,email:u.email||'',role:u.role||'user',sports,permissions,sport:sports[0]||'',canEdit:!!u.canEdit,token,lastSeen:Date.now()};sessions.set(token,session);online.set(u.id,session);addActivity({userId:u.id,username:u.username,name:u.name,action:'تسجيل دخول',sport:sports.join('، ')});res.json({ok:true,token,user:safeUser(session)});});
 app.post('/api/auth/heartbeat',(req,res)=>{const s=touch((req.headers.authorization||'').replace(/^Bearer /,''));if(!s)return res.status(401).json({ok:false});res.json({ok:true,user:safeUser(s)});});
 app.post('/api/auth/logout',(req,res)=>{const t=(req.headers.authorization||'').replace(/^Bearer /,'');const s=sessions.get(t);if(s){addActivity({userId:s.userId,username:s.username,name:s.name,action:'تسجيل خروج',sport:s.sport});sessions.delete(t);online.delete(s.userId);}res.json({ok:true});});
 
 app.get('/api/admin/users',requireAdmin,async(req,res)=>{const db=await loadDatabase();res.json((db.users||[]).map(u=>({...safeUser(u),online:online.has(u.id)})));});
-app.put('/api/admin/users/:id',requireAdmin,async(req,res)=>{const db=await loadDatabase();const u=(db.users||[]).find(x=>x.id===req.params.id);if(!u)return res.status(404).json({message:'User not found'});if('approved' in req.body)u.approved=!!req.body.approved;if('canEdit' in req.body)u.canEdit=!!req.body.canEdit;if('role' in req.body && ['user','admin'].includes(req.body.role))u.role=req.body.role;if('sports' in req.body){u.sports=Array.isArray(req.body.sports)?req.body.sports.filter(Boolean):[];u.sport=u.sports[0]||'';u.permissions=u.sports.map(sp=>({sport:sp,canEdit:!!u.canEdit}));}else if('sport' in req.body){u.sport=req.body.sport;u.sports=[req.body.sport].filter(Boolean);u.permissions=u.sports.map(sp=>({sport:sp,canEdit:!!u.canEdit}));}if('password' in req.body && String(req.body.password).length>=4){const hp=hashPassword(req.body.password);u.passwordHash=hp.hash;u.salt=hp.salt;}await saveDatabase(db);for(const [t,s] of sessions){if(s.userId===u.id){s.canEdit=!!u.canEdit;s.sports=u.sports||[u.sport];s.permissions=u.permissions||[];s.sport=s.sports[0]||'';s.role=u.role||'user';}}addActivity({userId:'admin',username:ADMIN_USER,name:ADMIN_USER,action:'تعديل صلاحيات حساب',sport:(u.sports||[]).join('، '),details:u.username});res.json(safeUser(u));});
-app.post('/api/admin/admins',requireAdmin,async(req,res)=>{const {username,password,name}=req.body||{};if(!username||!password||!name)return res.status(400).json({message:'أكمل بيانات الأدمن'});const db=await loadDatabase();db.users=db.users||[];if(db.users.some(u=>u.username.toLowerCase()===String(username).toLowerCase()) || String(username).toLowerCase()===ADMIN_USER.toLowerCase())return res.status(409).json({message:'اسم المستخدم مستخدم بالفعل'});const hp=hashPassword(password);const user={id:uid(),username,name,email:req.body.email||'',sports:[],sport:'',role:'admin',canEdit:true,permissions:[],approved:true,passwordHash:hp.hash,salt:hp.salt,createdAt:new Date().toISOString()};db.users.push(user);await saveDatabase(db);addActivity({userId:'admin',username:ADMIN_USER,name:ADMIN_USER,action:'إضافة أدمن',details:username});res.status(201).json(safeUser(user));});
-app.delete('/api/admin/users/:id',requireAdmin,async(req,res)=>{const db=await loadDatabase();db.users=(db.users||[]).filter(u=>u.id!==req.params.id);for(const [t,s] of sessions)if(s.userId===req.params.id){sessions.delete(t);online.delete(s.userId);}await saveDatabase(db);addActivity({userId:'admin',username:ADMIN_USER,name:ADMIN_USER,action:'حذف حساب',details:req.params.id});res.status(204).end();});
+app.put('/api/admin/users/:id',requireAdmin,async(req,res)=>{const db=await loadDatabase();const u=(db.users||[]).find(x=>x.id===req.params.id);if(!u)return res.status(404).json({message:'User not found'});if('approved' in req.body)u.approved=!!req.body.approved;if('canEdit' in req.body)u.canEdit=!!req.body.canEdit;if('role' in req.body && ['user','admin'].includes(req.body.role))u.role=req.body.role;if('sports' in req.body){u.sports=Array.isArray(req.body.sports)?req.body.sports.filter(Boolean):[];u.sport=u.sports[0]||'';u.permissions=u.sports.map(sp=>({sport:sp,canEdit:!!u.canEdit}));}else if('sport' in req.body){u.sport=req.body.sport;u.sports=[req.body.sport].filter(Boolean);u.permissions=u.sports.map(sp=>({sport:sp,canEdit:!!u.canEdit}));}if('password' in req.body && String(req.body.password).length>=4){const hp=hashPassword(req.body.password);u.passwordHash=hp.hash;u.salt=hp.salt;}await fs.writeFile(DATA_FILE,JSON.stringify(db,null,2));for(const [t,s] of sessions){if(s.userId===u.id){s.canEdit=!!u.canEdit;s.sports=u.sports||[u.sport];s.permissions=u.permissions||[];s.sport=s.sports[0]||'';s.role=u.role||'user';}}addActivity({userId:'admin',username:ADMIN_USER,name:ADMIN_USER,action:'تعديل صلاحيات حساب',sport:(u.sports||[]).join('، '),details:u.username});res.json(safeUser(u));});
+app.post('/api/admin/admins',requireAdmin,async(req,res)=>{const {username,password,name}=req.body||{};if(!username||!password||!name)return res.status(400).json({message:'أكمل بيانات الأدمن'});const db=await loadDatabase();db.users=db.users||[];if(db.users.some(u=>u.username.toLowerCase()===String(username).toLowerCase()) || String(username).toLowerCase()===ADMIN_USER.toLowerCase())return res.status(409).json({message:'اسم المستخدم مستخدم بالفعل'});const hp=hashPassword(password);const user={id:uid(),username,name,email:req.body.email||'',sports:[],sport:'',role:'admin',canEdit:true,permissions:[],approved:true,passwordHash:hp.hash,salt:hp.salt,createdAt:new Date().toISOString()};db.users.push(user);await fs.writeFile(DATA_FILE,JSON.stringify(db,null,2));addActivity({userId:'admin',username:ADMIN_USER,name:ADMIN_USER,action:'إضافة أدمن',details:username});res.status(201).json(safeUser(user));});
+app.delete('/api/admin/users/:id',requireAdmin,async(req,res)=>{const db=await loadDatabase();db.users=(db.users||[]).filter(u=>u.id!==req.params.id);for(const [t,s] of sessions)if(s.userId===req.params.id){sessions.delete(t);online.delete(s.userId);}await fs.writeFile(DATA_FILE,JSON.stringify(db,null,2));addActivity({userId:'admin',username:ADMIN_USER,name:ADMIN_USER,action:'حذف حساب',details:req.params.id});res.status(204).end();});
 app.get('/api/admin/online',requireAdmin,(req,res)=>res.json([...online.values()].map(s=>safeUser(s))));
 app.get('/api/admin/activity',requireAdmin,async(req,res)=>res.json((await loadDatabase()).activity||[]));
 app.post('/api/admin/activity',requireAdmin,async(req,res)=>{addActivity({userId:'admin',username:ADMIN_USER,name:ADMIN_USER,action:req.body.action||'',sport:req.body.sport||'',details:req.body.details||''});res.json({ok:true});});
@@ -328,47 +295,6 @@ app.post('/api/sports/:id/players',async(req,res)=>{const u=auth(req);const db=a
 const membershipType=allowedMembershipTypes.includes(String(req.body.membershipType||''))?String(req.body.membershipType):'عضويه عائليه';
 const p={id:Date.now(),name:req.body.name||'لاعب جديد',registrationDate:req.body.registrationDate||new Date().toISOString().slice(0,10),registrationNo:req.body.registrationNo||'N/A',membershipNumber:req.body.membershipNumber||'',nationalId:req.body.nationalId||'',membershipType,receiptNo:req.body.receiptNo||'N/A',age:Number(req.body.age||0),medicalHistory:req.body.medicalHistory||'سليم',isMember:req.body.isMember!==undefined?!!req.body.isMember:true,isPaid:req.body.isPaid!==undefined?!!req.body.isPaid:true,paidThroughMonth:req.body.paidThroughMonth||'',coach:req.body.coach||'',notes:req.body.notes||'',federation:req.body.federation||'',photo:req.body.photo||'',fileUrl:req.body.fileUrl||'',receiptImage:req.body.receiptImage||''};s.players.push(p);await saveDatabase(db);res.status(201).json(p);});
 app.put('/api/sports/:sportId/players/:playerId',async(req,res)=>{const u=auth(req);const db=await loadDatabase();const s=db.sports.find(x=>x.id===Number(req.params.sportId));if(!s)return res.status(404).end();if(!canEditSportForUser(u,s))return res.status(403).json({message:'صلاحية تعديل مطلوبة لهذه اللعبة'});const p=s.players.find(x=>x.id===Number(req.params.playerId));if(!p)return res.status(404).end();Object.assign(p,req.body);await saveDatabase(db);addActivity({userId:u.userId,username:u.username,name:u.name,action:'تعديل لاعب',sport:s.name,details:p.name});res.json(p);});
-app.patch('/api/admin/players/bulk',requireAdmin,async(req,res)=>{
-  try{
-    const db=await loadDatabase();
-    const sourceSportId=Number(req.body?.sourceSportId);
-    const playerIds=new Set((Array.isArray(req.body?.playerIds)?req.body.playerIds:[]).map(Number));
-    if(!Number.isFinite(sourceSportId)||!playerIds.size)return res.status(400).json({ok:false,message:'اختر لاعبين أولاً.'});
-    const source=db.sports.find(x=>Number(x.id)===sourceSportId);
-    if(!source)return res.status(404).json({ok:false,message:'الرياضة الحالية غير موجودة.'});
-    const targetSportId=req.body?.sportId!==undefined && req.body.sportId!=='' ? Number(req.body.sportId) : sourceSportId;
-    const target=db.sports.find(x=>Number(x.id)===targetSportId);
-    if(!target)return res.status(404).json({ok:false,message:'الرياضة الجديدة غير موجودة.'});
-    const updates=req.body?.updates||{};
-    const allowed=['paidThroughMonth','paymentDate','isPaid','coach'];
-    for(const k of Object.keys(updates)) if(!allowed.includes(k)) delete updates[k];
-    if('paidThroughMonth' in updates) updates.paidThroughMonth=String(updates.paidThroughMonth||'').trim();
-    if('paymentDate' in updates) updates.paymentDate=String(updates.paymentDate||'').trim();
-    if('isPaid' in updates) updates.isPaid=!!updates.isPaid;
-    if('coach' in updates) {
-      updates.coach=String(updates.coach||'').trim();
-      if(updates.coach && !(target.coaches||[]).some(c=>String(c.name).trim()===updates.coach)) return res.status(400).json({ok:false,message:'الكابتن المختار غير مسجل في الرياضة الجديدة.'});
-    }
-    const moving=targetSportId!==sourceSportId;
-    const selected=source.players.filter(p=>playerIds.has(Number(p.id)));
-    if(!selected.length)return res.status(404).json({ok:false,message:'لم يتم العثور على اللاعبين المحددين.'});
-    const changed=[];
-    for(const player of selected){
-      if(moving && !('coach' in updates)) player.coach='';
-      Object.assign(player,updates);
-      if(moving){
-        source.players=source.players.filter(p=>Number(p.id)!==Number(player.id));
-        if(target.players.some(p=>Number(p.id)===Number(player.id))) target.players=target.players.filter(p=>Number(p.id)!==Number(player.id));
-        target.players.push(player);
-      }
-      changed.push({id:player.id,name:player.name});
-    }
-    await saveDatabase(db);
-    addActivity({userId:'admin',username:ADMIN_USER,name:ADMIN_USER,action:'تعديل جماعي للاعبين',sport:`${source.name}${moving?' → '+target.name:''}`,details:`${changed.length} لاعب`});
-    res.json({ok:true,updated:changed.length,sourceSport:source.name,targetSport:target.name,players:changed});
-  }catch(e){console.error('Bulk player update failed',e);res.status(500).json({ok:false,message:'تعذر تنفيذ التعديل الجماعي. حاول مرة أخرى.'});}
-});
-
 app.delete('/api/sports/:sportId/players/:playerId',async(req,res)=>{const u=auth(req);const db=await loadDatabase();const s=db.sports.find(x=>x.id===Number(req.params.sportId));if(!s)return res.status(404).end();if(!canEditSportForUser(u,s))return res.status(403).json({message:'صلاحية تعديل مطلوبة لهذه اللعبة'});s.players=s.players.filter(p=>p.id!==Number(req.params.playerId));await saveDatabase(db);res.status(204).end();});
 app.post('/api/sports/:id/players/import',requireAdmin,async(req,res)=>{const db=await loadDatabase();const s=db.sports.find(x=>x.id===Number(req.params.id));if(!s)return res.status(404).end();const rows=Array.isArray(req.body.players)?req.body.players:[];s.players.push(...rows.map((r,i)=>({...r,id:r.id||Date.now()+i,registrationDate:r.registrationDate||new Date().toISOString().slice(0,10)})));await saveDatabase(db);res.json({added:rows.length});});
 app.post('/api/import-all',requireAdmin,async(req,res)=>{const db=await loadDatabase();db.sports=Array.isArray(req.body.sports)?req.body.sports:[];if(Array.isArray(req.body.federations))db.federations=req.body.federations;await saveDatabase(db);res.json({ok:true});});
@@ -395,7 +321,7 @@ function decryptSecret(value){
 app.get('/api/federations',requireAdmin,async(req,res)=>res.json((await loadDatabase()).federations||[]));
 app.post('/api/federations',requireAdmin,async(req,res)=>{const db=await loadDatabase();db.federations=db.federations||[];const f={id:uid(),name:req.body.name||'',sport:req.body.sport||'',createdAt:new Date().toISOString(),remoteUrl:req.body.remoteUrl||'',remoteUsername:req.body.remoteUsername||'',remotePasswordEncrypted:encryptSecret(req.body.remotePassword||'')};db.federations.push(f);await saveDatabase(db);res.status(201).json(f);});
 app.put('/api/federations/:id',requireAdmin,async(req,res)=>{const db=await loadDatabase();const f=(db.federations||[]).find(x=>x.id===req.params.id);if(!f)return res.status(404).end();Object.assign(f,req.body);await saveDatabase(db);res.json(f);});
-app.delete('/api/federations/:id',requireAdmin,async(req,res)=>{const db=await loadDatabase();const id=req.params.id;db.federations=(db.federations||[]).filter(x=>x.id!==id);for(const s of db.sports||[])for(const p of s.players||[])if(String(p.federationId)===String(id)){p.federation='';p.federationId='';}await saveDatabase(db);addActivity({userId:'admin',username:ADMIN_USER,name:ADMIN_USER,action:'حذف اتحاد',details:id});res.status(204).end();});
+app.delete('/api/federations/:id',requireAdmin,async(req,res)=>{const db=await loadDatabase();db.federations=(db.federations||[]).filter(x=>x.id!==req.params.id);await saveDatabase(db);res.status(204).end();});
 app.post('/api/federations/:id/remote-sync',requireAdmin,async(req,res)=>{
   try{
     const db=await loadDatabase(); const f=(db.federations||[]).find(x=>x.id===req.params.id);
