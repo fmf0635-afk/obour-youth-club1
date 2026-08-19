@@ -1,6 +1,6 @@
 {
   "name": "obouryouthclub",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Local server and database for Obour Youth Club management app",
   "main": "server.js",
   "scripts": {
