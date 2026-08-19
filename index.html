@@ -796,15 +796,40 @@ function adminLogin(){ loginAdmin(); }
                 <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">اسم المدرب:</span><strong>${esc(foundPlayer.coach||'غير محدد')}</strong></div>
                 <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">رقم القيد:</span><strong>${esc(foundPlayer.registrationNo||'-')}</strong></div>
                 <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">رقم العضوية:</span><strong>${esc(foundPlayer.membershipNumber||foundPlayer.memberId||'غير موجود')}</strong></div>
-                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">رقم الإيصال:</span><strong>${esc(foundPlayer.receiptNo||'-')}</strong></div><div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">أرشيف الإيصال:</span>${foundPlayer.receiptImage?`<a href="${esc(foundPlayer.receiptImage)}" target="_blank" class="text-amber-300 font-bold text-sm">فتح المرفق</a>`:'<span class="text-slate-500 text-sm">لا يوجد مرفق</span>'}</div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">رقم الإيصال:</span><strong>${esc(foundPlayer.receiptNo||'-')}</strong></div>
+                <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">تاريخ الدفع:</span><strong>${esc(foundPlayer.paymentDate||foundPlayer.receiptDate||'غير مسجل')}</strong></div><div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">أرشيف الإيصال:</span>${foundPlayer.receiptImage?`<a href="${esc(foundPlayer.receiptImage)}" target="_blank" class="text-amber-300 font-bold text-sm">فتح المرفق</a>`:'<span class="text-slate-500 text-sm">لا يوجد مرفق</span>'}</div>
                 <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">الاتحاد:</span><strong>${esc(foundPlayer.federation||'غير مرتبط')}</strong></div>
                 <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">السن:</span><strong>${esc(foundPlayer.age||0)} سنة</strong></div>
                 <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">الاشتراك:</span><strong class="${foundPlayer.isPaid?'text-emerald-400':'text-rose-400'}">${foundPlayer.isPaid?'مسدد حتى '+esc(foundPlayer.paidThroughMonth||'الشهر الحالي'):'غير مسدد'}</strong></div>
+                <div id="playerAttendanceSummary" class="col-span-1 md:col-span-2 bg-emerald-500/5 border border-emerald-500/15 p-4 rounded-2xl">
+                    <span class="text-emerald-300 text-xs block mb-2"><i class="fa-solid fa-calendar-check ml-1"></i> سجل الحضور</span>
+                    <strong class="text-white">جاري حساب أيام الحضور...</strong>
+                </div>
                 <div class="bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">العضوية:</span><strong>${foundPlayer.isMember?'عضو بالمركز':'غير عضو'}</strong></div>
                 <div class="col-span-1 md:col-span-2 bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">التاريخ المرضي:</span><strong>${esc(foundPlayer.medicalHistory||'لا يوجد')}</strong></div>
                 <div class="col-span-1 md:col-span-2 bg-slate-800/50 p-3 rounded-xl"><span class="text-slate-400 text-xs block">الملاحظات:</span><strong>${esc(foundPlayer.notes||'لا توجد ملاحظات')}</strong></div>`;
             document.getElementById('playerModal').classList.remove('hidden');
             document.getElementById('playerModal').classList.add('flex');
+            loadPlayerAttendanceSummary(foundSport.id, foundPlayer.id);
+        }
+
+        async function loadPlayerAttendanceSummary(sportId, playerId){
+            const el=document.getElementById('playerAttendanceSummary'); if(!el)return;
+            try{
+              const r=await apiFetch(`/api/attendance?sportId=${encodeURIComponent(sportId)}&playerId=${encodeURIComponent(playerId)}`);
+              const rows=await r.json();
+              const present=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='present').sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+              const weekdays=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+              const formatDay=date=>{
+                const d=new Date(`${date}T00:00:00`);
+                return `${weekdays[d.getDay()]} ${date}`;
+              };
+              el.innerHTML=`<span class="text-emerald-300 text-xs block mb-2"><i class="fa-solid fa-calendar-check ml-1"></i> سجل الحضور</span>
+                <div class="text-xl font-black text-white mb-2">حضر <span class="text-emerald-400">${present.length}</span> يوم</div>
+                ${present.length?`<div class="flex flex-wrap gap-2">${present.map(x=>`<span class="bg-slate-900/70 border border-emerald-500/10 rounded-xl px-3 py-2 text-xs text-slate-200">${formatDay(x.date)}</span>`).join('')}</div>`:'<p class="text-sm text-slate-500">لا توجد أيام حضور مسجلة حتى الآن.</p>'}`;
+            }catch(e){
+              el.innerHTML='<span class="text-emerald-300 text-xs block mb-1">سجل الحضور</span><p class="text-sm text-rose-400">تعذر تحميل سجل الحضور.</p>';
+            }
         }
 
         // Coach Details Card View
@@ -924,11 +949,12 @@ function adminLogin(){ loginAdmin(); }
             const visibleCount = [...state.selectedPlayerIds].filter(id => sport.players.some(p => Number(p.id)===Number(id))).length;
             document.getElementById('bulkEditCount').textContent = `تم تحديد ${visibleCount} لاعب من ${sport.name}`;
             const select = document.getElementById('bulkSportSelect');
-            select.innerHTML = state.sports.map((s,i)=>`<option value="${s.id}" ${i===state.activeSportIndex?'selected':''}>${esc(s.name)}</option>`).join('');
-            document.getElementById('bulkPaidThrough').value='';
+            select.innerHTML = state.sports.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+            select.value = String(sport.id);
             document.getElementById('bulkPaymentDate').value='';
-            document.getElementById('bulkPaidEnabled').checked=false;
+            document.getElementById('bulkEditType').value='paymentDate';
             refreshBulkCoachOptions();
+            toggleBulkEditField();
             document.getElementById('bulkEditModal').classList.remove('hidden');
             document.getElementById('bulkEditModal').classList.add('flex');
         }
@@ -936,27 +962,40 @@ function adminLogin(){ loginAdmin(); }
             const sportId=Number(document.getElementById('bulkSportSelect').value);
             const sport=state.sports.find(s=>Number(s.id)===sportId);
             const select=document.getElementById('bulkCoachSelect');
-            select.innerHTML='<option value="">بدون تغيير</option>'+(sport?.coaches||[]).map(c=>`<option value="${escAttr(c.name)}">${esc(c.name)}</option>`).join('');
+            select.innerHTML='<option value="">اختر الكابتن</option>'+(sport?.coaches||[]).map(c=>`<option value="${escAttr(c.name)}">${esc(c.name)}</option>`).join('');
+        }
+        function toggleBulkEditField(){
+            const type=document.getElementById('bulkEditType')?.value;
+            document.getElementById('bulkFieldPaymentDate')?.classList.toggle('hidden',type!=='paymentDate');
+            document.getElementById('bulkFieldSport')?.classList.toggle('hidden',type!=='sport');
+            document.getElementById('bulkFieldCoach')?.classList.toggle('hidden',type!=='coach');
+            if(type==='coach') refreshBulkCoachOptions();
         }
         function escAttr(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
         async function applyBulkEdit(){
             if(!state.isAdminLoggedIn)return;
-            const sport=state.sports[state.activeSportIndex];
-            const playerIds=[...state.selectedPlayerIds].filter(id=>sport.players.some(p=>Number(p.id)===Number(id)));
+            const source=state.sports[state.activeSportIndex];
+            const playerIds=[...state.selectedPlayerIds].filter(id=>source.players.some(p=>Number(p.id)===Number(id)));
             if(!playerIds.length)return alert('حدد لاعبين من الرياضة الحالية.');
-            const paidThrough=document.getElementById('bulkPaidThrough').value.trim();
-            const paymentDate=document.getElementById('bulkPaymentDate').value;
-            const coach=document.getElementById('bulkCoachSelect').value;
+            const type=document.getElementById('bulkEditType').value;
             const updates={};
-            if(paidThrough) updates.paidThroughMonth=paidThrough;
-            if(paymentDate) updates.paymentDate=paymentDate;
-            if(coach) updates.coach=coach;
-            if(document.getElementById('bulkPaidEnabled').checked) updates.isPaid=document.getElementById('bulkPaidStatus').value==='true';
-            const sportId=Number(document.getElementById('bulkSportSelect').value);
-            if(!Object.keys(updates).length && sportId===Number(sport.id)) return alert('اختر تعديلًا واحدًا على الأقل.');
-            if(!confirm(`سيتم تعديل ${playerIds.length} لاعب. هل تريد المتابعة؟`))return;
+            let sportId=Number(source.id);
+            if(type==='paymentDate'){
+              const value=document.getElementById('bulkPaymentDate').value;
+              if(!value)return alert('اختر تاريخ الدفع الجديد.');
+              updates.paymentDate=value;
+            }else if(type==='sport'){
+              sportId=Number(document.getElementById('bulkSportSelect').value);
+              if(!sportId)return alert('اختر اللعبة الجديدة.');
+              if(sportId===Number(source.id))return alert('اختر لعبة مختلفة عن اللعبة الحالية.');
+            }else if(type==='coach'){
+              const coach=document.getElementById('bulkCoachSelect').value;
+              if(!coach)return alert('اختر الكابتن الجديد.');
+              updates.coach=coach;
+            }
+            if(!confirm(`سيتم تطبيق تعديل "${type==='paymentDate'?'تاريخ الدفع':type==='sport'?'اسم اللعبة':'اسم الكابتن'}" على ${playerIds.length} لاعب. هل تريد المتابعة؟`))return;
             try{
-              const r=await apiFetch(`${apiBase}/api/admin/players/bulk`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sourceSportId:sport.id,sportId,playerIds,updates})});
+              const r=await apiFetch(`${apiBase}/api/admin/players/bulk`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sourceSportId:source.id,sportId,playerIds,updates})});
               const d=await r.json(); if(!r.ok) throw new Error(d.message||'فشل التعديل');
               state.selectedPlayerIds.clear(); saveSelectedPlayerIds(); closeModal('bulkEditModal'); await loadSports();
               showAppToast(`تم تعديل ${d.updated} لاعب بنجاح`);
@@ -1543,13 +1582,27 @@ async function setUserApproval(id,approved){await apiFetch('/api/admin/users/'+i
           <div><h3 class="text-xl font-black text-white">تعديل جماعي للاعبين</h3><p id="bulkEditCount" class="text-xs text-slate-400 mt-1"></p></div>
           <button onclick="closeModal('bulkEditModal')" class="text-slate-400 text-xl">✕</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label class="block"><span class="block text-sm text-slate-300 mb-2">الرياضة</span><select id="bulkSportSelect" onchange="refreshBulkCoachOptions()" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"></select></label>
-          <label class="block"><span class="block text-sm text-slate-300 mb-2">الكابتن</span><select id="bulkCoachSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"><option value="">بدون تغيير</option></select></label>
-          <label class="block"><span class="block text-sm text-slate-300 mb-2">تاريخ الدفع</span><input id="bulkPaymentDate" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"></label>
-          <label class="block"><span class="block text-sm text-slate-300 mb-2">مسدد حتى شهر</span><input id="bulkPaidThrough" type="text" placeholder="مثال: 2026-08 أو أغسطس 2026" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"></label>
-          <label class="flex items-center gap-3 bg-slate-800/60 rounded-xl p-3"><input id="bulkPaidEnabled" type="checkbox" class="w-5 h-5"><span class="text-sm text-slate-200">تغيير حالة السداد</span></label>
-          <select id="bulkPaidStatus" class="bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"><option value="true">مسدد</option><option value="false">غير مسدد</option></select>
+        <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 mb-4">
+          <p class="text-sm font-bold text-emerald-300">اختر نوع تعديل واحد فقط</p>
+          <p class="text-xs text-slate-400 mt-1">سيتم تطبيق الاختيار على كل اللاعبين المحددين.</p>
+        </div>
+        <div class="grid grid-cols-1 gap-4">
+          <label class="block"><span class="block text-sm text-slate-300 mb-2">ماذا تريد تعديلُه؟</span>
+            <select id="bulkEditType" onchange="toggleBulkEditField()" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white">
+              <option value="paymentDate">تاريخ الدفع</option>
+              <option value="sport">اسم اللعبة</option>
+              <option value="coach">اسم الكابتن</option>
+            </select>
+          </label>
+          <div id="bulkFieldPaymentDate">
+            <label class="block"><span class="block text-sm text-slate-300 mb-2">تاريخ الدفع الجديد</span><input id="bulkPaymentDate" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"></label>
+          </div>
+          <div id="bulkFieldSport" class="hidden">
+            <label class="block"><span class="block text-sm text-slate-300 mb-2">اسم اللعبة الجديدة</span><select id="bulkSportSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"></select></label>
+          </div>
+          <div id="bulkFieldCoach" class="hidden">
+            <label class="block"><span class="block text-sm text-slate-300 mb-2">اسم الكابتن الجديد</span><select id="bulkCoachSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white"><option value="">اختر الكابتن</option></select></label>
+          </div>
         </div>
         <div class="flex justify-end gap-2 mt-6">
           <button onclick="closeModal('bulkEditModal')" class="bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl">إلغاء</button>
